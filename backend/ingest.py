@@ -20,7 +20,7 @@ from parse_constitution import parse
 CHROMA_DIR = Path(__file__).parent.parent / "data" / "chroma"
 CHUNKS_FILE = Path(__file__).parent.parent / "data" / "chunks.json"
 COLLECTION_NAME = "constitution"
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "multi-qa-MiniLM-L6-cos-v1"
 
 
 def ingest():

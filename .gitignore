@@ -1,0 +1,21 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+*.egg-info/
+
+# Data (chroma DB is large; chunks.json is generated)
+data/chroma/
+data/chunks.json
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/.env.local
+
+# Env files with secrets
+.env
+backend/.env
+
+# macOS
+.DS_Store
