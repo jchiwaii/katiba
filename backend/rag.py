@@ -1,9 +1,9 @@
 """
 RAG pipeline:
-  question → embed → ChromaDB search → Gemini answer → structured response
+  question → hybrid retrieve → Gemini answer → structured response
 
-Uses hybrid retrieval: semantic (ChromaDB) + keyword (BM25-style with synonym expansion)
-to handle vocabulary mismatches (e.g., "protest" → Article 37 "assemble/demonstrate").
+Hybrid retrieval: semantic (ChromaDB cosine) + keyword (synonym-expanded BM25-style)
+ensures vocabulary mismatches ("protest" → "assemble") are handled robustly.
 """
 
 import json
@@ -23,43 +23,129 @@ CHUNKS_FILE = Path(__file__).parent.parent / "data" / "chunks.json"
 COLLECTION_NAME = "constitution"
 EMBEDDING_MODEL = "multi-qa-MiniLM-L6-cos-v1"
 GEMINI_MODEL = "gemini-2.5-flash"
-TOP_K = 6
+SEMANTIC_TOP_K = 6
+KEYWORD_TOP_K = 3
 
-# Legal synonym map: common plain-English terms → constitutional vocabulary
+# Plain-English → constitutional vocabulary synonyms
+# Covers the most common vocabulary mismatches for a Kenyan user
 SYNONYMS: dict[str, list[str]] = {
+    # Civil/political rights
     "protest": ["assemble", "demonstrate", "demonstration", "picket", "petition", "assembly"],
-    "protests": ["assemble", "demonstrate", "picketing"],
-    "march": ["assemble", "demonstrate", "picket"],
-    "fire": ["remove", "removal", "dismiss", "impeach", "impeachment"],
-    "fired": ["removed", "dismissed", "impeached"],
-    "sack": ["remove", "dismiss"],
-    "jail": ["detain", "arrest", "imprison", "custody"],
-    "jailed": ["arrested", "detained", "imprisoned"],
-    "prison": ["detained", "custody", "imprisonment"],
-    "arrested": ["arrest", "detained", "custody", "apprehend"],
+    "protests": ["demonstrate", "picket", "assembly", "assemblies"],
+    "march": ["demonstrate", "picket", "assemble"],
+    "rally": ["assemble", "assembly", "demonstrate"],
+    "strike": ["assemble", "demonstrate", "labour"],
+    "speech": ["expression", "freedom of expression", "opinion"],
+    "talk": ["expression", "speech"],
+    "press": ["media", "freedom of media", "expression"],
+    "newspaper": ["media", "freedom of media"],
+    "religion": ["conscience", "belief", "worship", "faith"],
+    "church": ["religion", "belief", "worship"],
+    "mosque": ["religion", "belief", "worship"],
+    "pray": ["worship", "religion", "conscience"],
     "vote": ["election", "elect", "suffrage", "ballot", "franchise"],
-    "voting": ["election", "suffrage", "electoral"],
-    "land": ["property", "tenure", "ownership"],
-    "speech": ["expression", "opinion", "freedom of expression"],
-    "religion": ["conscience", "belief", "worship"],
-    "healthcare": ["health", "medical"],
-    "education": ["school", "learning", "right to education"],
-    "death": ["capital punishment", "life"],
-    "torture": ["inhumane", "degrading treatment"],
-    "privacy": ["private", "search", "surveillance"],
-    "citizenship": ["citizen", "nationality", "naturalisation"],
-    "president": ["executive", "head of state", "commander in chief"],
+    "voting": ["election", "suffrage", "electoral", "ballot"],
+    "election": ["vote", "suffrage", "electoral"],
+    "party": ["political party", "political parties"],
+    # Rights of accused/arrested
+    "arrested": ["arrest", "detained", "custody", "apprehend"],
+    "detention": ["detained", "arrested", "custody", "imprisonment"],
+    "jail": ["detain", "arrest", "imprison", "custody", "imprisoned"],
+    "jailed": ["arrested", "detained", "imprisoned", "custody"],
+    "prison": ["detained", "custody", "imprisonment", "remand"],
+    "bail": ["bond", "remand", "pretrial"],
+    "lawyer": ["advocate", "counsel", "legal representation", "legal aid"],
+    "attorney": ["advocate", "counsel", "legal representation"],
+    "legal representation": ["advocate", "counsel", "assigned", "legal aid", "arrested"],
+    "represent": ["advocate", "counsel", "legal representation", "arrested"],
+    "solicitor": ["advocate", "counsel", "legal representation"],
+    "court": ["judiciary", "judicial", "magistrate", "tribunal"],
+    "judge": ["judiciary", "judicial", "chief justice"],
+    "trial": ["fair hearing", "hearing", "judicial process"],
+    "sue": ["legal action", "enforce rights", "remedy"],
+    # Search and privacy
+    "search": ["privacy", "searched", "home", "property", "person"],
+    "searched": ["privacy", "home", "property", "search"],
+    "surveillance": ["privacy", "information", "intercept"],
+    "wiretap": ["privacy", "intercept", "communication"],
+    "intercept": ["privacy", "communication", "information"],
+    # Government/leadership removal
+    "fire": ["remove", "removal", "dismiss", "impeach", "impeachment"],
+    "fired": ["removed", "dismissed", "impeached", "removed from office"],
+    "sack": ["remove", "dismiss", "impeach"],
+    "resign": ["resignation", "vacate", "vacancy"],
+    "remove": ["removal", "impeach", "dismiss", "vacate"],
+    "impeach": ["impeachment", "removal", "censure"],
+    # Land and property
+    "land": ["property", "tenure", "ownership", "title", "freehold", "leasehold"],
+    "property": ["land", "ownership", "title deed"],
+    "house": ["housing", "shelter", "residence", "adequate housing", "home", "property"],
+    "home": ["house", "residence", "privacy", "property", "searched"],
+    "evict": ["eviction", "land", "property"],
+    # Health, education, welfare
+    "hospital": ["health", "medical", "healthcare"],
+    "healthcare": ["health", "medical", "highest attainable standard of health"],
+    "doctor": ["health", "medical"],
+    "school": ["education", "learning", "basic education"],
+    "education": ["school", "learning", "basic education"],
+    "water": ["clean water", "sanitation", "basic needs"],
+    "food": ["nutrition", "basic needs", "adequate food"],
+    "unemployed": ["labour", "work", "employment"],
+    "work": ["labour", "employment", "fair remuneration"],
+    # Family
+    "marry": ["marriage", "matrimonial", "spouse", "family"],
+    "marriage": ["matrimonial", "spouse", "family", "married"],
+    "divorce": ["marriage", "matrimonial", "spouse", "family"],
+    "children": ["child", "minor", "juvenile", "best interests"],
+    "child": ["children", "minor", "juvenile", "best interests"],
+    "orphan": ["child", "children", "family"],
+    "parent": ["family", "children", "parental"],
+    # Vulnerable groups
+    "disabled": ["disability", "persons with disabilities"],
+    "disability": ["persons with disabilities", "disabled"],
+    "women": ["gender", "equality", "discrimination", "woman"],
+    "gender": ["equality", "discrimination", "women"],
+    "minority": ["marginalised", "marginalized", "minority communities"],
+    "youth": ["young persons", "age", "children"],
+    "elderly": ["older members", "older persons"],
+    # Government structures
+    "president": ["executive", "head of state", "commander in chief", "state house"],
     "governor": ["county governor", "county executive"],
     "senator": ["senate", "county representation"],
-    "mp": ["member of parliament", "national assembly"],
-    "courts": ["judiciary", "judicial", "magistrate"],
-    "police": ["security forces", "national police"],
-    "marriage": ["matrimonial", "spouse", "family"],
-    "children": ["child", "minor", "juvenile"],
-    "disabled": ["disability", "persons with disabilities"],
-    "women": ["gender", "equality", "discrimination"],
+    "mp": ["member of parliament", "national assembly", "member of national assembly"],
+    "parliament": ["national assembly", "senate", "legislature", "legislative"],
+    "cabinet": ["executive", "cabinet secretaries", "ministers"],
+    "police": ["national police service", "security forces", "police service"],
+    "army": ["kenya defence forces", "military", "national security"],
+    "government": ["state", "executive", "national government"],
+    "county": ["devolution", "devolved", "county government"],
+    # Finance
+    "tax": ["taxation", "revenue", "consolidated fund"],
+    "budget": ["appropriation", "consolidated fund", "finance"],
+    "corruption": ["integrity", "ethics", "accountability", "anti-corruption"],
+    # Death penalty / torture
+    "death penalty": ["capital punishment", "right to life"],
+    "torture": ["inhumane", "degrading", "cruel", "inhuman", "freedom and security", "fundamental"],
+    "tortured": ["inhumane", "degrading", "cruel", "inhuman", "torture", "fundamental"],
+    "cruel": ["inhumane", "degrading", "torture", "inhuman", "freedom and security"],
+    "inhuman": ["torture", "degrading", "cruel", "fundamental"],
+    "kill": ["right to life", "life"],
+    "privacy": ["private", "search", "surveillance", "information"],
+    "spy": ["privacy", "surveillance"],
+    # Citizenship
+    "citizenship": ["citizen", "nationality", "naturalisation", "naturalization"],
+    "foreigner": ["citizen", "citizenship", "nationality"],
+    "deported": ["citizenship", "expelled", "resident"],
 }
 
+STOP_WORDS = {
+    "i", "a", "an", "the", "is", "in", "of", "to", "do", "have", "can", "my",
+    "what", "are", "for", "on", "at", "be", "does", "did", "how", "who", "which",
+    "will", "was", "with", "and", "or", "not", "by", "from", "it", "this", "that",
+    "they", "we", "he", "she", "you", "me", "him", "her", "us", "them", "if",
+    "kenya", "kenyan", "constitution", "constitutional", "rights", "right", "under",
+    "about", "any", "all", "get", "has", "had", "been", "would", "could", "should",
+}
 
 # Singletons — loaded once at startup
 _model: SentenceTransformer | None = None
@@ -85,11 +171,13 @@ def _get_collection():
     return _collection
 
 
-def _get_all_chunks() -> list[dict]:
+def _get_main_chunks() -> list[dict]:
+    """Load only main constitution chunks (not schedules) from chunks.json."""
     global _all_chunks
     if _all_chunks is None:
         with open(CHUNKS_FILE, encoding="utf-8") as f:
-            _all_chunks = json.load(f)
+            data = json.load(f)
+        _all_chunks = [c for c in data if not c.get("is_schedule", False)]
     return _all_chunks
 
 
@@ -100,31 +188,37 @@ def _configure_gemini():
     genai.configure(api_key=api_key)
 
 
-def _expand_query(question: str) -> set[str]:
-    """Return a set of search terms from the question, with synonym expansion."""
+def _expand_terms(question: str) -> set[str]:
+    """Tokenize question and expand with synonyms."""
     words = set(re.findall(r"\w+", question.lower()))
     expanded = set(words)
     for word in words:
         if word in SYNONYMS:
             for syn in SYNONYMS[word]:
                 expanded.update(syn.lower().split())
-    # Remove common stop words
-    stops = {"i", "a", "the", "is", "in", "of", "to", "do", "have", "can", "my",
-             "what", "are", "for", "on", "at", "be", "does", "did", "how", "who",
-             "will", "was", "with", "and", "or", "not", "by", "from", "an", "it"}
-    return expanded - stops
+    # Also try bigrams
+    word_list = re.findall(r"\w+", question.lower())
+    for j in range(len(word_list) - 1):
+        bigram = f"{word_list[j]} {word_list[j+1]}"
+        if bigram in SYNONYMS:
+            for syn in SYNONYMS[bigram]:
+                expanded.update(syn.lower().split())
+    return expanded - STOP_WORDS
 
 
-def keyword_search(question: str, top_k: int = 3) -> list[dict]:
-    """BM25-style keyword search over chunks.json with synonym expansion."""
-    terms = _expand_query(question)
+def keyword_search(question: str, top_k: int = KEYWORD_TOP_K) -> list[dict]:
+    """Score chunks by keyword overlap (with synonym expansion)."""
+    terms = _expand_terms(question)
     if not terms:
         return []
 
-    chunks = _get_all_chunks()
+    chunks = _get_main_chunks()
     scored = []
     for chunk in chunks:
-        search_text = f"{chunk.get('title','')} {chunk.get('text','')}".lower()
+        search_text = (
+            f"article {chunk['article']} {chunk.get('title','')} {chunk.get('text','')} "
+            f"{chunk.get('chapter','')} {chunk.get('part','')}"
+        ).lower()
         score = sum(1 for t in terms if t in search_text)
         if score > 0:
             scored.append((score, chunk))
@@ -140,25 +234,25 @@ def keyword_search(question: str, top_k: int = 3) -> list[dict]:
                 "chapter": c.get("chapter", ""),
                 "part": c.get("part", ""),
             },
-            "distance": 1.0 - (score / len(terms)),  # pseudo-distance
+            "distance": max(0.0, 1.0 - score / max(len(terms), 1)),
         }
         for score, c in scored[:top_k]
     ]
 
 
-def retrieve(question: str, top_k: int = TOP_K) -> list[dict]:
+def retrieve(question: str) -> list[dict]:
     """Hybrid retrieval: semantic + keyword, merged and deduplicated."""
     model = _get_model()
     collection = _get_collection()
 
-    # Semantic search
+    # 1. Semantic search
     embedding = model.encode([question])[0].tolist()
     results = collection.query(
         query_embeddings=[embedding],
-        n_results=top_k,
+        n_results=SEMANTIC_TOP_K,
         include=["documents", "metadatas", "distances"],
     )
-    semantic_chunks = [
+    semantic = [
         {
             "chunk_id": results["ids"][0][i],
             "text": results["documents"][0][i],
@@ -168,18 +262,18 @@ def retrieve(question: str, top_k: int = TOP_K) -> list[dict]:
         for i in range(len(results["ids"][0]))
     ]
 
-    # Keyword search
-    keyword_chunks = keyword_search(question, top_k=3)
+    # 2. Keyword search
+    keyword = keyword_search(question)
 
-    # Merge: semantic first, then add keyword results not already included
-    seen_ids = {c["chunk_id"] for c in semantic_chunks}
-    merged = list(semantic_chunks)
-    for kc in keyword_chunks:
-        if kc["chunk_id"] not in seen_ids:
+    # 3. Merge: semantic first, keyword fills gaps
+    seen = {c["chunk_id"] for c in semantic}
+    merged = list(semantic)
+    for kc in keyword:
+        if kc["chunk_id"] not in seen:
             merged.append(kc)
-            seen_ids.add(kc["chunk_id"])
+            seen.add(kc["chunk_id"])
 
-    return merged[:top_k + 2]  # allow a few extra to give LLM more context
+    return merged
 
 
 def build_context(chunks: list[dict]) -> str:
@@ -188,7 +282,7 @@ def build_context(chunks: list[dict]) -> str:
         meta = c["metadata"]
         header = f"Article {meta['article']} – {meta['title']}"
         if meta.get("chapter"):
-            header += f" ({meta['chapter']})"
+            header += f"\n{meta['chapter']}"
         parts.append(f"[{header}]\n{c['text']}")
     return "\n\n---\n\n".join(parts)
 
@@ -207,41 +301,73 @@ def generate(question: str, context: str, eli5: bool = False) -> str:
 
 Question: {question}
 """
-
     model = genai.GenerativeModel(
         GEMINI_MODEL,
         generation_config=genai.GenerationConfig(
             temperature=0.1,
-            max_output_tokens=1024,
+            max_output_tokens=2048,
         ),
     )
     response = model.generate_content(prompt)
     return response.text
 
 
-def parse_response(text: str) -> dict:
-    """Extract structured fields from the LLM response."""
-    def extract(pattern: str) -> str:
-        m = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-        return m.group(1).strip() if m else ""
+def parse_response(raw: str) -> dict:
+    """
+    Extract structured fields from LLM output.
+    Handles multiple possible formatting variations from the model.
+    """
+    def extract(patterns: list[str]) -> str:
+        for pat in patterns:
+            m = re.search(pat, raw, re.DOTALL | re.IGNORECASE)
+            if m:
+                return m.group(1).strip()
+        return ""
 
-    answer = extract(r"\*\*Answer:\*\*\s*(.*?)(?=\*\*References|\*\*Exact|\Z)")
-    references_raw = extract(r"\*\*References:\*\*\s*(.*?)(?=\*\*Exact|\*\*Simple|\Z)")
-    exact_text = extract(r'\*\*Exact Text:\*\*\s*[""]?(.*?)[""]?(?=\*\*Simple|\Z)')
-    explanation = extract(r"\*\*Simple Explanation:\*\*\s*(.*?)(?=\Z)")
+    # Answer field — try bold header first, then plain header
+    answer = extract([
+        r"\*\*Answer:\*\*\s*(.*?)(?=\*\*References|\*\*Exact|\*\*Simple|\Z)",
+        r"Answer:\s*(.*?)(?=References:|Exact Text:|Simple Explanation:|\Z)",
+    ])
 
+    # References block
+    references_raw = extract([
+        r"\*\*References:\*\*\s*(.*?)(?=\*\*Exact|\*\*Simple|\Z)",
+        r"References:\s*(.*?)(?=Exact Text:|Simple Explanation:|\Z)",
+    ])
+
+    # Exact text — strip surrounding quotes if present
+    exact_text = extract([
+        r'\*\*Exact Text:\*\*\s*[""""]?(.*?)[""""]?\s*(?=\*\*Simple|\Z)',
+        r'Exact Text:\s*[""""]?(.*?)[""""]?\s*(?=Simple Explanation:|\Z)',
+    ])
+    # Clean up stray quote characters at boundaries
+    exact_text = exact_text.strip('""\u201c\u201d\u2018\u2019')
+
+    # Simple explanation
+    explanation = extract([
+        r"\*\*Simple Explanation:\*\*\s*(.*?)(?=\Z)",
+        r"Simple Explanation:\s*(.*?)(?=\Z)",
+    ])
+
+    # Parse references into a clean list
     references = []
     for line in references_raw.split("\n"):
-        line = line.strip().lstrip("-•* ").strip()
-        if line:
+        line = line.strip().lstrip("-•*·– ").strip()
+        if line and len(line) > 3:
             references.append(line)
+
+    # If no structured references found, try to extract article mentions
+    if not references:
+        art_mentions = re.findall(r"Article\s+\d+[^,\n]*", raw)
+        references = list(dict.fromkeys(art_mentions))  # deduplicate preserving order
 
     return {
         "answer": answer,
         "references": references,
         "exact_text": exact_text,
         "explanation": explanation,
-        "raw": text,
+        "raw": raw,
     }
 
 
