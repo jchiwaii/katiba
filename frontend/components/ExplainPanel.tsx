@@ -34,12 +34,12 @@ export default function ExplainPanel({ question }: { question: string }) {
   if (state === 'idle') return (
     <div className="mt-3 flex gap-2">
       <button onClick={() => load(false)}
-        className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-white/[0.03]"
+        className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-white/[0.03]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain with AI
       </button>
       <button onClick={() => load(true)}
-        className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-white/[0.03]"
+        className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-white/[0.03]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain Simply
       </button>
@@ -47,14 +47,14 @@ export default function ExplainPanel({ question }: { question: string }) {
   )
 
   if (state === 'loading') return (
-    <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: 'var(--dim)' }}>
+    <div className="mt-3 flex items-center gap-2 text-[11px]" style={{ color: 'var(--dim)' }}>
       <span className="w-3 h-3 rounded-full border-2 border-t-transparent border-[var(--green)] animate-spin inline-block" />
       Thinking…
     </div>
   )
 
   if (state === 'error') return (
-    <p className="mt-3 text-xs" style={{ color: 'var(--dim)' }}>
+    <p className="mt-3 text-[11px]" style={{ color: 'var(--dim)' }}>
       AI unavailable.{' '}
       <button onClick={() => setState('idle')} className="underline" style={{ color: 'var(--green)' }}>Retry</button>
     </p>
@@ -68,32 +68,32 @@ export default function ExplainPanel({ question }: { question: string }) {
         <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: 'var(--dim)' }}>
           AI · {eli5 ? 'Simple' : 'Standard'}
         </span>
-        <button onClick={() => { setState('idle'); setData(null) }} className="text-xs hover:opacity-70" style={{ color: 'var(--dim)' }}>✕</button>
+        <button onClick={() => { setState('idle'); setData(null) }} className="text-[11px] hover:opacity-70" style={{ color: 'var(--dim)' }}>✕</button>
       </div>
 
-      {data.answer && <p className="text-sm leading-7" style={{ color: 'var(--text)' }}>{data.answer}</p>}
+      {data.answer && <p className="text-[13px] leading-6" style={{ color: 'var(--text)' }}>{data.answer}</p>}
 
       {data.exact_text && (
-        <blockquote className="border-l-2 pl-3 text-sm italic leading-7" style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}>
+        <blockquote className="border-l-2 pl-3 text-[13px] italic leading-6" style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}>
           &ldquo;{data.exact_text}&rdquo;
         </blockquote>
       )}
 
       {data.explanation && (
-        <p className="text-sm leading-7" style={{ color: 'var(--muted)' }}>{data.explanation}</p>
+        <p className="text-[13px] leading-6" style={{ color: 'var(--muted)' }}>{data.explanation}</p>
       )}
 
       {data.references.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {data.references.map(r => (
-            <span key={r} className="rounded-full px-2.5 py-0.5 text-xs" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+            <span key={r} className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
               {r}
             </span>
           ))}
         </div>
       )}
 
-      <div className="flex gap-3 pt-1 text-xs" style={{ color: 'var(--muted)' }}>
+      <div className="flex gap-3 pt-1 text-[11px]" style={{ color: 'var(--muted)' }}>
         {!eli5
           ? <button onClick={() => load(true)} className="underline underline-offset-2">Simplify</button>
           : <button onClick={() => load(false)} className="underline underline-offset-2">Standard</button>

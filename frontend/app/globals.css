@@ -27,9 +27,9 @@ body {
     radial-gradient(circle at top, rgba(255,255,255,0.035), transparent 30rem),
     linear-gradient(180deg, #101010 0%, #0c0c0c 55%, #090909 100%);
   color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
+  font-family: var(--font-ibm), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 

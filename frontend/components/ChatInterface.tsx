@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import ArticleCard, { Article } from './ArticleCard'
 import ExplainPanel from './ExplainPanel'
 
@@ -16,26 +17,34 @@ interface Message {
   content: SearchResult | string
 }
 
-const SUGGESTED = [
+const COMMON_QUESTIONS = [
   'Do I have the right to protest?',
-  'Can the president fire a governor?',
   'What are my rights if arrested?',
+  'Can the president fire a governor?',
+  'How is the president elected?',
   'Freedom of expression',
   'Right to healthcare and education',
-  'How is the president elected?',
 ]
 
-const EXPLORE_ITEMS = [
-  ['Explore Katiba', 'what rights are protected in the constitution'],
-  ['The Executive', 'powers of the president'],
-  ['Mission Hub', 'county government powers'],
-] as const
-
-const LIBRARY_ITEMS = [
-  'Freedom of expression',
-  'How is the president elected?',
-  'What are my rights if arrested?',
-  'Right to healthcare and education',
+const CHAPTERS = [
+  { label: 'Chapter 1', title: 'Sovereignty of the People', query: 'chapter one sovereignty of the people and supremacy of this constitution' },
+  { label: 'Chapter 2', title: 'The Republic', query: 'chapter two the republic' },
+  { label: 'Chapter 3', title: 'Citizenship', query: 'chapter three citizenship' },
+  { label: 'Chapter 4', title: 'Bill of Rights', query: 'chapter four bill of rights' },
+  { label: 'Chapter 5', title: 'Land and Environment', query: 'chapter five land and environment' },
+  { label: 'Chapter 6', title: 'Leadership and Integrity', query: 'chapter six leadership and integrity' },
+  { label: 'Chapter 7', title: 'Representation of the People', query: 'chapter seven representation of the people' },
+  { label: 'Chapter 8', title: 'The Legislature', query: 'chapter eight the legislature' },
+  { label: 'Chapter 9', title: 'The Executive', query: 'chapter nine the executive' },
+  { label: 'Chapter 10', title: 'The Judiciary', query: 'chapter ten judiciary' },
+  { label: 'Chapter 11', title: 'Devolved Government', query: 'chapter eleven devolved government' },
+  { label: 'Chapter 12', title: 'Public Finance', query: 'chapter twelve public finance' },
+  { label: 'Chapter 13', title: 'The Public Service', query: 'chapter thirteen public service' },
+  { label: 'Chapter 14', title: 'National Security', query: 'chapter fourteen national security' },
+  { label: 'Chapter 15', title: 'Commissions and Independent Offices', query: 'chapter fifteen commissions and independent offices' },
+  { label: 'Chapter 16', title: 'Amendment of the Constitution', query: 'chapter sixteen amendment of this constitution' },
+  { label: 'Chapter 17', title: 'General Provisions', query: 'chapter seventeen general provisions' },
+  { label: 'Chapter 18', title: 'Transitional Provisions', query: 'chapter eighteen transitional and consequential provisions' },
 ]
 
 export default function ChatInterface() {
@@ -44,7 +53,6 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const suggestionIndexRef = useRef(0)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -57,8 +65,8 @@ export default function ChatInterface() {
     node.style.height = `${Math.min(node.scrollHeight, 140)}px`
   }, [input])
 
-  async function search(q: string) {
-    const trimmed = q.trim()
+  async function search(query: string) {
+    const trimmed = query.trim()
     if (!trimmed || loading) return
 
     setInput('')
@@ -71,7 +79,6 @@ export default function ChatInterface() {
         body: JSON.stringify({ question: trimmed }),
       })
       if (!res.ok) throw new Error()
-
       const data: SearchResult = await res.json()
       setMessages(prev => [
         ...prev,
@@ -87,11 +94,9 @@ export default function ChatInterface() {
     }
   }
 
-  function cycleSuggestion() {
-    const next = SUGGESTED[suggestionIndexRef.current % SUGGESTED.length]
-    suggestionIndexRef.current += 1
-    setInput(next)
-    requestAnimationFrame(() => inputRef.current?.focus())
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    search(input)
   }
 
   function clearSession() {
@@ -100,185 +105,127 @@ export default function ChatInterface() {
     requestAnimationFrame(() => inputRef.current?.focus())
   }
 
-  const sessionQuestions = Array.from(new Set(messages.map(message => message.question).reverse()))
-  const sidebarRecent = sessionQuestions.length > 0 ? sessionQuestions.slice(0, 6) : SUGGESTED.slice(0, 6)
-  const homeCards = sidebarRecent.slice(0, 3)
-
   return (
-    <div className="flex min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <aside
-        className="hidden w-[248px] flex-shrink-0 flex-col border-r px-4 py-5 lg:flex"
-        style={{ borderColor: 'var(--line)', background: 'rgba(8,8,8,0.72)' }}
+        className="hidden h-screen w-[280px] flex-shrink-0 border-r lg:block"
+        style={{ borderColor: 'var(--line)', background: 'rgba(8,8,8,0.78)' }}
       >
-        <button onClick={clearSession} className="flex items-center gap-3 text-left">
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-xl border"
-            style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.02)', color: 'var(--green)' }}
-          >
-            <BrandIcon className="h-4 w-4" />
-          </span>
-          <span className="text-base font-semibold tracking-tight" style={{ color: 'var(--text)' }}>
-            Katiba
-          </span>
-        </button>
-
-        <button
-          onClick={() => {
-            clearSession()
-            setTimeout(() => inputRef.current?.focus(), 50)
-          }}
-          className="mt-6 flex items-center justify-between rounded-xl border px-3 py-3 text-sm transition-colors hover:bg-white/[0.03]"
-          style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--text)' }}
-        >
-          <span className="flex items-center gap-2">
-            <PlusIcon className="h-3.5 w-3.5" />
-            New Chat
-          </span>
-          <span className="rounded-md px-1.5 py-0.5 text-[10px]" style={{ background: '#232323', color: 'var(--dim)' }}>
-            N
-          </span>
-        </button>
-
-        <div className="mt-5 space-y-1">
-          {EXPLORE_ITEMS.map(([label, question]) => (
-            <button
-              key={label}
-              onClick={() => search(question)}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/[0.03]"
-              style={{ color: 'var(--muted)' }}
+        <div className="flex h-full flex-col px-4 py-5">
+          <button onClick={clearSession} className="flex items-center gap-3 text-left">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-xl border"
+              style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.02)', color: 'var(--green)' }}
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded-md border" style={{ borderColor: 'var(--line)' }}>
-                <DotIcon className="h-3 w-3" />
-              </span>
-              {label}
-            </button>
-          ))}
-        </div>
+              <BrandIcon className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-semibold tracking-tight" style={{ color: 'var(--text)' }}>
+              Katiba
+            </span>
+          </button>
 
-        <div className="mt-8">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--dim)' }}>
-            This Session
-          </p>
-          <div className="space-y-1">
-            {sidebarRecent.map(item => (
-              <button
-                key={item}
-                onClick={() => search(item)}
-                className="block w-full truncate rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-white/[0.03]"
-                style={{ color: 'var(--muted)' }}
-                title={item}
-              >
-                {item}
-              </button>
-            ))}
+          <button
+            onClick={clearSession}
+            className="mt-6 rounded-xl border px-3 py-3 text-left text-[13px] font-medium transition-colors hover:bg-white/[0.03]"
+            style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--text)' }}
+          >
+            New Chat
+          </button>
+
+          <div className="mt-6">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--dim)' }}>
+              Chapters
+            </p>
+            <div className="space-y-1">
+              {CHAPTERS.map(chapter => (
+                <button
+                  key={chapter.label}
+                  onClick={() => search(chapter.query)}
+                  className="block w-full rounded-xl px-3 py-1.5 text-left transition-colors hover:bg-white/[0.03]"
+                >
+                  <span className="block text-xs leading-5" style={{ color: 'var(--muted)' }}>
+                    {chapter.label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div className="mt-8">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--dim)' }}>
-            Library
-          </p>
-          <div className="space-y-1">
-            {LIBRARY_ITEMS.map(item => (
-              <button
-                key={item}
-                onClick={() => search(item)}
-                className="block w-full truncate rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-white/[0.03]"
-                style={{ color: 'var(--muted)' }}
-                title={item}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-auto rounded-2xl border px-4 py-4" style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.02)' }}>
-          <p className="mb-1 text-sm font-medium" style={{ color: 'var(--text)' }}>Grounded search</p>
-          <p className="text-xs leading-5" style={{ color: 'var(--dim)' }}>
-            Search is instant. AI explanation only appears when you ask for it.
-          </p>
         </div>
       </aside>
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <header className="border-b px-4 py-4 lg:px-6" style={{ borderColor: 'var(--line)', background: 'rgba(10,10,10,0.82)' }}>
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs" style={{ color: 'var(--dim)' }}>
-                General <span style={{ color: 'var(--muted)' }}>/</span> <span style={{ color: 'var(--text)' }}>Katiba</span>
-              </p>
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-xl border lg:hidden"
+                style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.02)', color: 'var(--green)' }}
+              >
+                <BrandIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[11px]" style={{ color: 'var(--dim)' }}>Ask the Constitution</p>
+                <p className="text-[13px]" style={{ color: 'var(--muted)' }}>Grounded article citations</p>
+              </div>
             </div>
+
             {messages.length > 0 && (
-              <button onClick={clearSession} className="text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--dim)' }}>
+              <button
+                onClick={clearSession}
+                className="text-[10px] uppercase tracking-[0.14em]"
+                style={{ color: 'var(--dim)' }}
+              >
                 Clear
               </button>
             )}
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {messages.length === 0 ? (
-            <div className="mx-auto flex max-w-[900px] flex-col items-center px-4 pb-16 pt-18 text-center lg:px-6 lg:pt-24">
-              <div
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border"
-                style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.03)', color: 'var(--green)' }}
-              >
-                <BrandIcon className="h-6 w-6" />
+            <div className="mx-auto flex max-w-[760px] flex-col px-4 pb-16 pt-18 lg:px-6 lg:pt-20">
+              <div className="text-center">
+                <div
+                  className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border"
+                  style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.03)', color: 'var(--green)' }}
+                >
+                  <BrandIcon className="h-6 w-6" />
+                </div>
+                <h1
+                  className="mt-6 text-[22px] font-medium leading-[1.3] tracking-tight sm:text-[24px]"
+                  style={{ color: 'var(--text)' }}
+                >
+                  What would you like to ask?
+                </h1>
+                <p className="mx-auto mt-2 max-w-[520px] text-[13px] leading-6" style={{ color: 'var(--muted)' }}>
+                  Search articles directly, then use AI explanation only if you want extra context.
+                </p>
               </div>
 
-              <p className="mt-6 text-sm" style={{ color: 'var(--muted)' }}>Good to See You!</p>
-              <h1
-                className="mt-2 max-w-[520px] text-[28px] font-medium leading-[1.25] tracking-tight sm:text-[34px]"
-                style={{ color: 'var(--text)' }}
-              >
-                How can Katiba assist?
-              </h1>
-
-              <div className="mt-8 w-full max-w-[700px]">
+              <div className="mt-8">
                 <Composer
                   input={input}
+                  inputRef={inputRef}
                   loading={loading}
                   onChange={setInput}
-                  onSubmit={event => {
-                    event.preventDefault()
-                    search(input)
-                  }}
-                  onCycleSuggestion={cycleSuggestion}
+                  onSubmit={submit}
                   onSearch={search}
-                  inputRef={inputRef}
                 />
               </div>
 
-              <div className="mt-4 flex w-full max-w-[700px] flex-wrap gap-2">
-                {SUGGESTED.slice(0, 5).map(item => (
-                  <button
-                    key={item}
-                    onClick={() => search(item)}
-                    className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-white/[0.03]"
-                    style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-8 w-full max-w-[700px] text-left">
-                <p className="mb-3 text-sm font-medium" style={{ color: 'var(--text)' }}>Recent searches</p>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {homeCards.map(item => (
+              <div className="mt-8">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: 'var(--dim)' }}>
+                  Common Questions
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {COMMON_QUESTIONS.map(question => (
                     <button
-                      key={item}
-                      onClick={() => search(item)}
-                      className="rounded-2xl border px-4 py-4 text-left transition-colors hover:bg-white/[0.03]"
-                      style={{ borderColor: 'var(--line)', background: 'var(--card)' }}
+                      key={question}
+                      onClick={() => search(question)}
+                      className="rounded-2xl border px-4 py-4 text-left text-[13px] leading-6 transition-colors hover:bg-white/[0.03]"
+                      style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--text)' }}
                     >
-                      <p className="text-sm font-medium leading-6" style={{ color: 'var(--text)' }}>
-                        {item}
-                      </p>
-                      <p className="mt-3 text-xs" style={{ color: 'var(--dim)' }}>
-                        Search constitutional articles
-                      </p>
+                      {question}
                     </button>
                   ))}
                 </div>
@@ -287,27 +234,27 @@ export default function ChatInterface() {
           ) : (
             <div className="mx-auto max-w-[760px] px-4 py-8 lg:px-6">
               <div className="space-y-7">
-                {messages.map(msg => (
-                  <div key={msg.id} className="space-y-3">
+                {messages.map(message => (
+                  <div key={message.id} className="space-y-3">
                     <div className="flex justify-end">
                       <div
-                        className="max-w-[460px] rounded-2xl rounded-tr-md px-4 py-3 text-sm leading-7"
+                        className="max-w-[460px] rounded-2xl rounded-tr-md px-4 py-3 text-[13px] leading-6"
                         style={{ background: 'var(--user-bg)', color: 'var(--text)' }}
                       >
-                        {msg.question}
+                        {message.question}
                       </div>
                     </div>
 
-                    {msg.type === 'error' && (
-                      <p className="rounded-xl px-4 py-3 text-sm" style={{ background: '#1f0e0e', color: '#f87171' }}>
-                        {msg.content as string}
+                    {message.type === 'error' && (
+                      <p className="rounded-xl px-4 py-3 text-[13px]" style={{ background: '#1f0e0e', color: '#f87171' }}>
+                        {message.content as string}
                       </p>
                     )}
 
-                    {msg.type === 'result' && (() => {
-                      const result = msg.content as SearchResult
+                    {message.type === 'result' && (() => {
+                      const result = message.content as SearchResult
                       return result.articles.length === 0 ? (
-                        <p className="text-sm" style={{ color: 'var(--dim)' }}>
+                        <p className="text-[13px]" style={{ color: 'var(--dim)' }}>
                           No matching articles found. Try rephrasing.
                         </p>
                       ) : (
@@ -323,8 +270,8 @@ export default function ChatInterface() {
                               Grounded
                             </span>
                           </div>
-                          {result.articles.slice(0, 5).map((art, index) => (
-                            <ArticleCard key={`${art.article}-${index}`} article={art} rank={index} />
+                          {result.articles.slice(0, 5).map((article, index) => (
+                            <ArticleCard key={`${article.article}-${index}`} article={article} rank={index} />
                           ))}
                           <ExplainPanel question={result.question} />
                         </div>
@@ -357,17 +304,13 @@ export default function ChatInterface() {
           <div className="border-t px-4 py-4 lg:px-6" style={{ borderColor: 'var(--line)', background: 'rgba(10,10,10,0.88)' }}>
             <div className="mx-auto max-w-[760px]">
               <Composer
+                compact
                 input={input}
+                inputRef={inputRef}
                 loading={loading}
                 onChange={setInput}
-                onSubmit={event => {
-                  event.preventDefault()
-                  search(input)
-                }}
-                onCycleSuggestion={cycleSuggestion}
+                onSubmit={submit}
                 onSearch={search}
-                inputRef={inputRef}
-                compact
               />
             </div>
           </div>
@@ -380,43 +323,23 @@ export default function ChatInterface() {
 function Composer({
   compact = false,
   input,
+  inputRef,
   loading,
   onChange,
   onSubmit,
-  onCycleSuggestion,
   onSearch,
-  inputRef,
 }: {
   compact?: boolean
   input: string
+  inputRef: React.RefObject<HTMLTextAreaElement | null>
   loading: boolean
   onChange: (value: string) => void
-  onSubmit: (event: React.FormEvent) => void
-  onCycleSuggestion: () => void
+  onSubmit: (event: FormEvent) => void
   onSearch: (query: string) => void
-  inputRef: React.RefObject<HTMLTextAreaElement | null>
 }) {
   return (
     <div className="rounded-2xl border p-3" style={{ borderColor: 'var(--line)', background: 'var(--card)' }}>
-      <div className="mb-3 flex items-center justify-between gap-3 border-b pb-3 text-xs" style={{ borderColor: 'var(--line)', color: 'var(--dim)' }}>
-        <span>Grounded article search only</span>
-        <span className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full" style={{ background: 'var(--green)' }} />
-          AI explanation optional
-        </span>
-      </div>
-
       <form onSubmit={onSubmit} className="flex items-end gap-2">
-        <button
-          type="button"
-          onClick={onCycleSuggestion}
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border transition-colors hover:bg-white/[0.03]"
-          style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}
-          aria-label="Insert suggested prompt"
-        >
-          <PlusIcon className="h-4 w-4" />
-        </button>
-
         <textarea
           ref={inputRef}
           value={input}
@@ -429,18 +352,18 @@ function Composer({
           }}
           placeholder="Ask anything about the Constitution..."
           rows={1}
-          className={`flex-1 resize-none bg-transparent outline-none placeholder:text-[var(--dim)] ${compact ? 'py-2 text-sm' : 'py-2.5 text-sm'}`}
+          className={`flex-1 resize-none bg-transparent outline-none placeholder:text-[var(--dim)] ${compact ? 'py-2 text-[13px]' : 'py-2.5 text-[13px]'}`}
           style={{ color: 'var(--text)', maxHeight: '120px' }}
         />
 
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="flex h-10 flex-shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-opacity disabled:opacity-30"
+          className="flex h-9 flex-shrink-0 items-center gap-2 rounded-xl px-4 text-[13px] font-medium transition-opacity disabled:opacity-30"
           style={{ background: 'var(--green)', color: '#07150f' }}
         >
-          <SearchIcon className="h-4 w-4" />
-          Search
+          <SendIcon className="h-4 w-4" />
+          Send
         </button>
       </form>
     </div>
@@ -459,28 +382,11 @@ function BrandIcon(props: { className?: string }) {
   )
 }
 
-function PlusIcon(props: { className?: string }) {
+function SendIcon(props: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={props.className}>
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  )
-}
-
-function SearchIcon(props: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={props.className}>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4.5 4.5" />
-    </svg>
-  )
-}
-
-function DotIcon(props: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={props.className}>
-      <circle cx="12" cy="12" r="4" />
+      <path d="M4 12 20 4l-4 16-4.5-6.5L4 12Z" />
+      <path d="M11.5 13.5 20 4" />
     </svg>
   )
 }
