@@ -11,33 +11,28 @@ export interface Article {
 }
 
 export default function ArticleCard({ article, rank }: { article: Article; rank: number }) {
-  const [expanded, setExpanded] = useState(rank === 0) // first result open by default
+  const [open, setOpen] = useState(rank === 0)
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/[0.03] transition-colors"
       >
-        <span className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full bg-green-100 text-green-800 text-xs font-bold flex items-center justify-center">
+        <span className="text-xs font-mono font-bold flex-shrink-0 px-2 py-0.5 rounded-md" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
           {article.article}
         </span>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 text-sm">{article.title}</p>
-          {article.chapter && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{article.chapter}</p>
-          )}
-        </div>
-        <span className="text-gray-400 text-sm flex-shrink-0 mt-0.5">
-          {expanded ? '▾' : '▸'}
+        <span className="flex-1 text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
+          {article.title}
+        </span>
+        <span className="text-xs flex-shrink-0" style={{ color: 'var(--dim)' }}>
+          {open ? '▾' : '▸'}
         </span>
       </button>
 
-      {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-gray-100">
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-            {article.text}
-          </p>
+      {open && (
+        <div className="px-4 pb-4 pt-1 text-sm leading-7 whitespace-pre-line" style={{ color: 'var(--muted)', borderTop: '1px solid var(--line)' }}>
+          {article.text}
         </div>
       )}
     </div>

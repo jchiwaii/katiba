@@ -9,133 +9,95 @@ export interface ExplainData {
   explanation: string
 }
 
-interface ExplainPanelProps {
-  question: string
-}
-
-export default function ExplainPanel({ question }: ExplainPanelProps) {
+export default function ExplainPanel({ question }: { question: string }) {
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [data, setData] = useState<ExplainData | null>(null)
   const [eli5, setEli5] = useState(false)
 
-  async function fetchExplanation(useEli5: boolean) {
+  async function load(simple: boolean) {
     setState('loading')
-    setEli5(useEli5)
+    setEli5(simple)
     try {
       const res = await fetch('/api/explain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, eli5: useEli5 }),
+        body: JSON.stringify({ question, eli5: simple }),
       })
-      if (!res.ok) throw new Error('Failed')
-      const json: ExplainData = await res.json()
-      setData(json)
+      if (!res.ok) throw new Error()
+      setData(await res.json())
       setState('done')
     } catch {
       setState('error')
     }
   }
 
-  if (state === 'idle') {
-    return (
-      <div className="mt-3 flex gap-2 flex-wrap">
-        <button
-          onClick={() => fetchExplanation(false)}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
-        >
-          <span>✦</span> Explain with AI
-        </button>
-        <button
-          onClick={() => fetchExplanation(true)}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-purple-200 text-purple-700 hover:bg-purple-50 transition-colors"
-        >
-          <span>✦</span> Explain Simply (ELI12)
-        </button>
-      </div>
-    )
-  }
+  if (state === 'idle') return (
+    <div className="flex gap-2 mt-3">
+      <button onClick={() => load(false)}
+        className="text-xs px-3 py-1.5 rounded-full border transition-colors hover:border-[var(--green)] hover:text-[var(--green)]"
+        style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
+        Explain with AI
+      </button>
+      <button onClick={() => load(true)}
+        className="text-xs px-3 py-1.5 rounded-full border transition-colors hover:border-[var(--green)] hover:text-[var(--green)]"
+        style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
+        Explain Simply
+      </button>
+    </div>
+  )
 
-  if (state === 'loading') {
-    return (
-      <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
-        <span className="inline-block w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-        AI is reading the Constitution…
-      </div>
-    )
-  }
+  if (state === 'loading') return (
+    <div className="flex items-center gap-2 mt-3 text-xs" style={{ color: 'var(--dim)' }}>
+      <span className="w-3 h-3 rounded-full border-2 border-t-transparent border-[var(--green)] animate-spin inline-block" />
+      Thinking…
+    </div>
+  )
 
-  if (state === 'error') {
-    return (
-      <div className="mt-3 text-xs text-red-600">
-        AI unavailable. The constitutional text above still shows the relevant articles.
-        <button onClick={() => setState('idle')} className="ml-2 underline">Try again</button>
-      </div>
-    )
-  }
+  if (state === 'error') return (
+    <p className="mt-3 text-xs" style={{ color: 'var(--dim)' }}>
+      AI unavailable.{' '}
+      <button onClick={() => setState('idle')} className="underline" style={{ color: 'var(--green)' }}>Retry</button>
+    </p>
+  )
 
   if (!data) return null
 
   return (
-    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider flex items-center gap-1">
-          <span>✦</span> AI Explanation {eli5 && '(Simple)'}
+    <div className="mt-3 rounded-xl p-4 space-y-3" style={{ background: 'var(--green-bg)', border: '1px solid #1e3d2a' }}>
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: 'var(--green)' }}>
+          AI · {eli5 ? 'Simple' : 'Standard'}
         </span>
-        <button
-          onClick={() => { setState('idle'); setData(null) }}
-          className="text-xs text-blue-400 hover:text-blue-600"
-        >
-          ✕ Close
-        </button>
+        <button onClick={() => { setState('idle'); setData(null) }} className="text-xs hover:opacity-70" style={{ color: 'var(--dim)' }}>✕</button>
       </div>
 
-      {/* Answer */}
-      {data.answer && (
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Answer</p>
-          <p className="text-sm text-gray-800 leading-relaxed">{data.answer}</p>
-        </div>
-      )}
+      {data.answer && <p className="text-sm leading-7" style={{ color: 'var(--text)' }}>{data.answer}</p>}
 
-      {/* Exact text */}
       {data.exact_text && (
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Exact Constitutional Text</p>
-          <blockquote className="text-sm text-gray-700 italic border-l-2 border-blue-400 pl-3">
-            &ldquo;{data.exact_text}&rdquo;
-          </blockquote>
-        </div>
+        <blockquote className="text-sm italic leading-7 border-l-2 pl-3" style={{ borderColor: 'var(--green)', color: 'var(--muted)' }}>
+          &ldquo;{data.exact_text}&rdquo;
+        </blockquote>
       )}
 
-      {/* Simple explanation */}
       {data.explanation && (
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-            {eli5 ? 'Simple Explanation' : 'In Plain English'}
-          </p>
-          <p className="text-sm text-gray-700 leading-relaxed">{data.explanation}</p>
+        <p className="text-sm leading-7" style={{ color: 'var(--muted)' }}>{data.explanation}</p>
+      )}
+
+      {data.references.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {data.references.map(r => (
+            <span key={r} className="text-xs px-2.5 py-0.5 rounded-full" style={{ background: '#142a1e', color: 'var(--green)', border: '1px solid #1e3d2a' }}>
+              {r}
+            </span>
+          ))}
         </div>
       )}
 
-      {/* Re-explain buttons */}
-      <div className="pt-1 flex gap-2 flex-wrap">
-        {!eli5 && (
-          <button
-            onClick={() => fetchExplanation(true)}
-            className="text-xs text-purple-600 hover:text-purple-800 underline"
-          >
-            Explain more simply
-          </button>
-        )}
-        {eli5 && (
-          <button
-            onClick={() => fetchExplanation(false)}
-            className="text-xs text-blue-600 hover:text-blue-800 underline"
-          >
-            Show standard explanation
-          </button>
-        )}
+      <div className="pt-1 flex gap-3 text-xs" style={{ color: 'var(--green)' }}>
+        {!eli5
+          ? <button onClick={() => load(true)} className="underline underline-offset-2">Simplify</button>
+          : <button onClick={() => load(false)} className="underline underline-offset-2">Standard</button>
+        }
       </div>
     </div>
   )

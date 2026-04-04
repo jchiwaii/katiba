@@ -1,197 +1,216 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ArticleCard, { Article } from './ArticleCard'
 import ExplainPanel from './ExplainPanel'
 
-interface SearchResult {
-  question: string
-  articles: Article[]
-}
-
+interface SearchResult { question: string; articles: Article[] }
 interface Message {
   id: string
-  type: 'question' | 'result' | 'error'
-  content: string | SearchResult
+  type: 'result' | 'error'
+  question: string
+  content: SearchResult | string
 }
 
-const EXAMPLE_QUESTIONS = [
+const SUGGESTED = [
   'Do I have the right to protest?',
   'Can the president fire a governor?',
-  'What are my rights if arrested?',
+  'Rights if arrested',
   'Freedom of expression',
-  'Right to education and healthcare',
+  'Right to healthcare and education',
   'How is the president elected?',
 ]
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  async function search(question: string) {
-    if (!question.trim() || loading) return
-
-    setMessages(prev => [...prev, { id: Date.now().toString(), type: 'question', content: question }])
+  async function search(q: string) {
+    const trimmed = q.trim()
+    if (!trimmed || loading) return
     setInput('')
     setLoading(true)
-
     try {
       const res = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question: trimmed }),
       })
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) throw new Error()
       const data: SearchResult = await res.json()
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), type: 'result', content: data }])
+      setMessages(p => [...p, { id: `${Date.now()}`, type: 'result', question: trimmed, content: data }])
     } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        type: 'error',
-        content: 'Could not reach the server. Please try again.',
-      }])
+      setMessages(p => [...p, { id: `${Date.now()}`, type: 'error', question: trimmed, content: 'Server error. Please try again.' }])
     } finally {
       setLoading(false)
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    search(input)
-  }
-
   return (
-    <div className="flex flex-col h-full">
-      {/* Message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+    <div className="flex h-screen" style={{ background: 'var(--bg)' }}>
 
-        {/* Empty state */}
-        {messages.length === 0 && (
-          <div className="max-w-2xl mx-auto">
-            <p className="text-center text-gray-400 text-sm mb-5">
-              Search the Constitution — results are instant and free.
-              <br />
-              <span className="text-xs">AI explanation is optional, only when you need it.</span>
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {EXAMPLE_QUESTIONS.map(q => (
-                <button
-                  key={q}
-                  onClick={() => search(q)}
-                  className="text-left text-sm bg-white border border-gray-200 rounded-xl px-4 py-3 hover:border-green-400 hover:bg-green-50 transition-colors text-gray-700"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Sidebar */}
+      <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 border-r py-5 px-4" style={{ borderColor: 'var(--line)' }}>
+        <button onClick={() => setMessages([])} className="flex items-center gap-2 mb-6">
+          <span className="text-base font-bold tracking-tight" style={{ color: 'var(--green)', fontFamily: 'var(--font-lora), Georgia, serif' }}>Katiba</span>
+        </button>
 
-        <div className="max-w-2xl mx-auto space-y-6">
-          {messages.map(msg => (
-            <div key={msg.id}>
-              {/* User question bubble */}
-              {msg.type === 'question' && (
-                <div className="flex justify-end">
-                  <div className="bg-green-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-sm text-sm">
-                    {msg.content as string}
-                  </div>
-                </div>
-              )}
+        <button
+          onClick={() => { setMessages([]); setTimeout(() => inputRef.current?.focus(), 50) }}
+          className="w-full text-left text-sm px-3 py-2.5 rounded-lg mb-4 border transition-colors hover:border-[var(--green)]"
+          style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}
+        >
+          + New search
+        </button>
 
-              {/* Search results (no AI) */}
-              {msg.type === 'result' && (() => {
-                const result = msg.content as SearchResult
-                return (
-                  <div>
-                    {result.articles.length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">
-                        No matching articles found. Try rephrasing your question.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-xs text-gray-400 mb-2">
-                          {result.articles.length} article{result.articles.length !== 1 ? 's' : ''} found
-                        </p>
-                        {result.articles.slice(0, 4).map((art, i) => (
-                          <ArticleCard key={art.article} article={art} rank={i} />
-                        ))}
-                        {/* AI explain is opt-in */}
-                        <ExplainPanel question={result.question} />
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
+        <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--dim)' }}>Explore</p>
+        {[
+          ['Bill of Rights', 'what is the bill of rights'],
+          ['The Executive', 'powers of the president'],
+          ['Judiciary', 'functions of the judiciary'],
+          ['Devolution', 'county government powers'],
+          ['Elections', 'how is the president elected'],
+        ].map(([label, q]) => (
+          <button key={label} onClick={() => search(q)}
+            className="text-left text-sm px-3 py-2 rounded-lg hover:bg-white/5 transition-colors w-full"
+            style={{ color: 'var(--muted)' }}>
+            {label}
+          </button>
+        ))}
 
-              {/* Error */}
-              {msg.type === 'error' && (
-                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm">
-                  {msg.content as string}
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Loading indicator */}
-          {loading && (
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce [animation-delay:300ms]" />
-              </div>
-              Searching the Constitution…
-            </div>
-          )}
-
-          <div ref={bottomRef} />
+        <div className="mt-auto">
+          <p className="text-[11px] leading-5" style={{ color: 'var(--dim)' }}>
+            Search is free. AI explanations are optional.
+          </p>
         </div>
-      </div>
+      </aside>
 
-      {/* Input bar */}
-      <div className="border-t border-gray-200 bg-white px-4 py-4">
-        <div className="max-w-2xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex gap-3 items-end">
+      {/* Chat main */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+
+        {/* Mobile header */}
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
+          <span className="font-bold" style={{ color: 'var(--green)', fontFamily: 'var(--font-lora), Georgia, serif' }}>Katiba</span>
+          {messages.length > 0 && (
+            <button onClick={() => setMessages([])} className="text-xs" style={{ color: 'var(--dim)' }}>Clear</button>
+          )}
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+            {/* Empty state */}
+            {messages.length === 0 && !loading && (
+              <div className="pt-8">
+                <h1 className="text-2xl font-semibold mb-1" style={{ fontFamily: 'var(--font-lora), Georgia, serif', color: 'var(--text)' }}>
+                  Ask the Constitution
+                </h1>
+                <p className="text-sm mb-8" style={{ color: 'var(--muted)' }}>
+                  Constitution of Kenya, 2010 · Grounded article citations
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SUGGESTED.map(s => (
+                    <button key={s} onClick={() => search(s)}
+                      className="text-left text-sm px-4 py-3 rounded-xl border hover:border-[var(--green)] hover:text-[var(--text)] transition-colors"
+                      style={{ border: '1px solid var(--line)', color: 'var(--muted)', background: 'var(--card)' }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message thread */}
+            {messages.map(msg => (
+              <div key={msg.id} className="space-y-3">
+
+                {/* User question bubble */}
+                <div className="flex justify-end">
+                  <div className="text-sm px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-sm" style={{ background: 'var(--user-bg)', color: 'var(--text)' }}>
+                    {msg.question}
+                  </div>
+                </div>
+
+                {/* Error */}
+                {msg.type === 'error' && (
+                  <p className="text-sm px-4 py-3 rounded-xl" style={{ background: '#1f0e0e', color: '#f87171' }}>
+                    {msg.content as string}
+                  </p>
+                )}
+
+                {/* Results */}
+                {msg.type === 'result' && (() => {
+                  const result = msg.content as SearchResult
+                  return result.articles.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--dim)' }}>No matching articles found. Try rephrasing.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs" style={{ color: 'var(--dim)' }}>
+                        {result.articles.length} article{result.articles.length !== 1 ? 's' : ''} found
+                      </p>
+                      {result.articles.slice(0, 5).map((art, i) => (
+                        <ArticleCard key={`${art.article}-${i}`} article={art} rank={i} />
+                      ))}
+                      <ExplainPanel question={result.question} />
+                    </div>
+                  )
+                })()}
+              </div>
+            ))}
+
+            {/* Loading */}
+            {loading && (
+              <div className="flex justify-end">
+                <div className="px-4 py-2.5 rounded-2xl rounded-tr-sm flex items-center gap-2" style={{ background: 'var(--user-bg)' }}>
+                  {[0, 1, 2].map(i => (
+                    <span key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: 'var(--green)', animationDelay: `${i * 120}ms` }} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div ref={bottomRef} />
+          </div>
+        </div>
+
+        {/* Input bar */}
+        <div className="border-t px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+          <form
+            onSubmit={e => { e.preventDefault(); search(input) }}
+            className="max-w-2xl mx-auto flex items-end gap-2"
+          >
             <textarea
+              ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  search(input)
-                }
-              }}
-              placeholder="Search the Constitution…"
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); search(input) } }}
+              placeholder="Ask about the Constitution…"
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="flex-1 resize-none rounded-xl px-4 py-2.5 text-sm outline-none placeholder:text-[var(--dim)] transition-colors"
+              style={{ background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--text)', maxHeight: '120px' }}
             />
             <button
               type="submit"
-              disabled={loading || !input.trim()}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl px-5 py-3 text-sm font-medium transition-colors"
+              disabled={!input.trim() || loading}
+              className="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition-opacity disabled:opacity-30"
+              style={{ background: 'var(--green)', color: '#000' }}
             >
-              Search
+              Send
             </button>
           </form>
-
-          <div className="flex items-center mt-2">
-            {messages.length > 0 && (
-              <button
-                onClick={() => setMessages([])}
-                className="text-xs text-gray-400 hover:text-gray-600 ml-auto"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          <p className="text-center text-[11px] mt-2" style={{ color: 'var(--dim)' }}>
+            Constitution of Kenya, 2010 · Results cite exact articles
+          </p>
         </div>
+
       </div>
     </div>
   )
