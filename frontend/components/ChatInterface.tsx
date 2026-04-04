@@ -172,7 +172,7 @@ export default function ChatInterface() {
             {messages.length > 0 && (
               <button
                 onClick={clearSession}
-                className="text-[10px] uppercase tracking-[0.14em]"
+                className="text-[9px] uppercase tracking-[0.1em]"
                 style={{ color: 'var(--dim)' }}
               >
                 Clear

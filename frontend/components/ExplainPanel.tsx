@@ -34,12 +34,12 @@ export default function ExplainPanel({ question }: { question: string }) {
   if (state === 'idle') return (
     <div className="mt-3 flex gap-2">
       <button onClick={() => load(false)}
-        className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-white/[0.03]"
+        className="rounded-full border px-2.5 py-1 text-[10px] transition-colors hover:bg-white/[0.03]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain with AI
       </button>
       <button onClick={() => load(true)}
-        className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-white/[0.03]"
+        className="rounded-full border px-2.5 py-1 text-[10px] transition-colors hover:bg-white/[0.03]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain Simply
       </button>
