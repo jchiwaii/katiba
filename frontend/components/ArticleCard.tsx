@@ -14,24 +14,25 @@ export default function ArticleCard({ article, rank }: { article: Article; rank:
   const [open, setOpen] = useState(rank === 0)
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
+    <div className="overflow-hidden rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/[0.03] transition-colors"
+        className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-white/[0.03]"
       >
-        <span className="text-xs font-mono font-bold flex-shrink-0 px-2 py-0.5 rounded-md" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
-          {article.article}
+        <span
+          className="flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium"
+          style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--muted)', border: '1px solid var(--line)' }}
+        >
+          Article {article.article}
         </span>
-        <span className="flex-1 text-sm font-medium truncate" style={{ color: 'var(--text)' }}>
-          {article.title}
-        </span>
+        <span className="flex-1 truncate text-sm font-medium" style={{ color: 'var(--text)' }}>{article.title}</span>
         <span className="text-xs flex-shrink-0" style={{ color: 'var(--dim)' }}>
           {open ? '▾' : '▸'}
         </span>
       </button>
 
       {open && (
-        <div className="px-4 pb-4 pt-1 text-sm leading-7 whitespace-pre-line" style={{ color: 'var(--muted)', borderTop: '1px solid var(--line)' }}>
+        <div className="whitespace-pre-line px-4 pb-4 pt-1 text-sm leading-7" style={{ color: 'var(--muted)', borderTop: '1px solid var(--line)' }}>
           {article.text}
         </div>
       )}

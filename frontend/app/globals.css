@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --bg:       #0E0E0E;
-  --card:     #161616;
+  --bg:       #0c0c0c;
+  --card:     #151515;
   --line:     #242424;
-  --text:     #F2F2F2;
-  --muted:    #888;
-  --dim:      #555;
-  --green:    #22C97A;
-  --green-bg: #0E2318;
-  --user-bg:  #1A2C1F;
+  --text:     #f2f2f2;
+  --muted:    #9b9b9b;
+  --dim:      #626262;
+  --green:    #39d6a4;
+  --green-bg: #12221d;
+  --user-bg:  #18221f;
 }
 
 @theme inline {
@@ -23,9 +23,11 @@
 html, body { height: 100%; margin: 0; }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.035), transparent 30rem),
+    linear-gradient(180deg, #101010 0%, #0c0c0c 55%, #090909 100%);
   color: var(--text);
-  font-family: var(--font-ibm), system-ui, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;

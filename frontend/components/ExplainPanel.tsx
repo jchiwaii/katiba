@@ -32,14 +32,14 @@ export default function ExplainPanel({ question }: { question: string }) {
   }
 
   if (state === 'idle') return (
-    <div className="flex gap-2 mt-3">
+    <div className="mt-3 flex gap-2">
       <button onClick={() => load(false)}
-        className="text-xs px-3 py-1.5 rounded-full border transition-colors hover:border-[var(--green)] hover:text-[var(--green)]"
+        className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-white/[0.03]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain with AI
       </button>
       <button onClick={() => load(true)}
-        className="text-xs px-3 py-1.5 rounded-full border transition-colors hover:border-[var(--green)] hover:text-[var(--green)]"
+        className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-white/[0.03]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain Simply
       </button>
@@ -47,7 +47,7 @@ export default function ExplainPanel({ question }: { question: string }) {
   )
 
   if (state === 'loading') return (
-    <div className="flex items-center gap-2 mt-3 text-xs" style={{ color: 'var(--dim)' }}>
+    <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: 'var(--dim)' }}>
       <span className="w-3 h-3 rounded-full border-2 border-t-transparent border-[var(--green)] animate-spin inline-block" />
       Thinking…
     </div>
@@ -63,9 +63,9 @@ export default function ExplainPanel({ question }: { question: string }) {
   if (!data) return null
 
   return (
-    <div className="mt-3 rounded-xl p-4 space-y-3" style={{ background: 'var(--green-bg)', border: '1px solid #1e3d2a' }}>
+    <div className="mt-3 space-y-3 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)' }}>
       <div className="flex justify-between items-center">
-        <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: 'var(--green)' }}>
+        <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: 'var(--dim)' }}>
           AI · {eli5 ? 'Simple' : 'Standard'}
         </span>
         <button onClick={() => { setState('idle'); setData(null) }} className="text-xs hover:opacity-70" style={{ color: 'var(--dim)' }}>✕</button>
@@ -74,7 +74,7 @@ export default function ExplainPanel({ question }: { question: string }) {
       {data.answer && <p className="text-sm leading-7" style={{ color: 'var(--text)' }}>{data.answer}</p>}
 
       {data.exact_text && (
-        <blockquote className="text-sm italic leading-7 border-l-2 pl-3" style={{ borderColor: 'var(--green)', color: 'var(--muted)' }}>
+        <blockquote className="border-l-2 pl-3 text-sm italic leading-7" style={{ borderColor: 'var(--line)', color: 'var(--muted)' }}>
           &ldquo;{data.exact_text}&rdquo;
         </blockquote>
       )}
@@ -86,14 +86,14 @@ export default function ExplainPanel({ question }: { question: string }) {
       {data.references.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {data.references.map(r => (
-            <span key={r} className="text-xs px-2.5 py-0.5 rounded-full" style={{ background: '#142a1e', color: 'var(--green)', border: '1px solid #1e3d2a' }}>
+            <span key={r} className="rounded-full px-2.5 py-0.5 text-xs" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
               {r}
             </span>
           ))}
         </div>
       )}
 
-      <div className="pt-1 flex gap-3 text-xs" style={{ color: 'var(--green)' }}>
+      <div className="flex gap-3 pt-1 text-xs" style={{ color: 'var(--muted)' }}>
         {!eli5
           ? <button onClick={() => load(true)} className="underline underline-offset-2">Simplify</button>
           : <button onClick={() => load(false)} className="underline underline-offset-2">Standard</button>
