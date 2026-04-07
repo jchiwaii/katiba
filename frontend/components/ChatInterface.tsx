@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import ArticleCard, { Article } from './ArticleCard'
 import ExplainPanel from './ExplainPanel'
+import ThemeToggle from './ThemeToggle'
 
 interface SearchResult {
   question: string
@@ -109,13 +110,13 @@ export default function ChatInterface() {
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <aside
         className="hidden h-screen w-[280px] flex-shrink-0 border-r lg:block"
-        style={{ borderColor: 'var(--line)', background: 'rgba(8,8,8,0.78)' }}
+        style={{ borderColor: 'var(--line)', background: 'var(--shell)' }}
       >
         <div className="flex h-full flex-col px-4 py-5">
           <button onClick={clearSession} className="flex items-center gap-3 text-left">
             <span
               className="flex h-8 w-8 items-center justify-center rounded-xl border"
-              style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.02)', color: 'var(--green)' }}
+              style={{ borderColor: 'var(--line)', background: 'var(--soft-bg)', color: 'var(--green)' }}
             >
               <BrandIcon className="h-4 w-4" />
             </span>
@@ -126,7 +127,7 @@ export default function ChatInterface() {
 
           <button
             onClick={clearSession}
-            className="mt-6 rounded-xl border px-3 py-3 text-left text-[13px] font-medium transition-colors hover:bg-white/[0.03]"
+            className="mt-6 rounded-xl border px-3 py-3 text-left text-[13px] font-medium transition-colors hover:bg-[var(--soft-bg-hover)]"
             style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--text)' }}
           >
             New Chat
@@ -141,7 +142,7 @@ export default function ChatInterface() {
                 <button
                   key={chapter.label}
                   onClick={() => search(chapter.query)}
-                  className="block w-full rounded-xl px-3 py-1.5 text-left transition-colors hover:bg-white/[0.03]"
+                  className="block w-full rounded-xl px-3 py-1.5 text-left transition-colors hover:bg-[var(--soft-bg-hover)]"
                 >
                   <span className="block text-xs leading-5" style={{ color: 'var(--muted)' }}>
                     {chapter.label}
@@ -154,12 +155,12 @@ export default function ChatInterface() {
       </aside>
 
       <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="border-b px-4 py-4 lg:px-6" style={{ borderColor: 'var(--line)', background: 'rgba(10,10,10,0.82)' }}>
+        <header className="border-b px-4 py-4 lg:px-6" style={{ borderColor: 'var(--line)', background: 'var(--header-bg)' }}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span
                 className="flex h-8 w-8 items-center justify-center rounded-xl border lg:hidden"
-                style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.02)', color: 'var(--green)' }}
+                style={{ borderColor: 'var(--line)', background: 'var(--soft-bg)', color: 'var(--green)' }}
               >
                 <BrandIcon className="h-4 w-4" />
               </span>
@@ -169,15 +170,18 @@ export default function ChatInterface() {
               </div>
             </div>
 
-            {messages.length > 0 && (
-              <button
-                onClick={clearSession}
-                className="text-[9px] uppercase tracking-[0.1em]"
-                style={{ color: 'var(--dim)' }}
-              >
-                Clear
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              {messages.length > 0 && (
+                <button
+                  onClick={clearSession}
+                  className="text-[9px] uppercase tracking-[0.1em]"
+                  style={{ color: 'var(--dim)' }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
@@ -187,7 +191,7 @@ export default function ChatInterface() {
               <div className="text-center">
                 <div
                   className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border"
-                  style={{ borderColor: 'var(--line)', background: 'rgba(255,255,255,0.03)', color: 'var(--green)' }}
+                  style={{ borderColor: 'var(--line)', background: 'var(--soft-bg)', color: 'var(--green)' }}
                 >
                   <BrandIcon className="h-6 w-6" />
                 </div>
@@ -222,7 +226,7 @@ export default function ChatInterface() {
                     <button
                       key={question}
                       onClick={() => search(question)}
-                      className="rounded-2xl border px-4 py-4 text-left text-[13px] leading-6 transition-colors hover:bg-white/[0.03]"
+                      className="rounded-2xl border px-4 py-4 text-left text-[13px] leading-6 transition-colors hover:bg-[var(--soft-bg-hover)]"
                       style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--text)' }}
                     >
                       {question}
@@ -246,7 +250,7 @@ export default function ChatInterface() {
                     </div>
 
                     {message.type === 'error' && (
-                      <p className="rounded-xl px-4 py-3 text-[13px]" style={{ background: '#1f0e0e', color: '#f87171' }}>
+                      <p className="rounded-xl px-4 py-3 text-[13px]" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
                         {message.content as string}
                       </p>
                     )}
@@ -265,7 +269,7 @@ export default function ChatInterface() {
                             </p>
                             <span
                               className="rounded-full border px-3 py-1 text-[11px]"
-                              style={{ borderColor: 'var(--line)', color: 'var(--dim)', background: 'rgba(255,255,255,0.02)' }}
+                              style={{ borderColor: 'var(--line)', color: 'var(--dim)', background: 'var(--soft-bg)' }}
                             >
                               Grounded
                             </span>
@@ -301,7 +305,7 @@ export default function ChatInterface() {
         </div>
 
         {messages.length > 0 && (
-          <div className="border-t px-4 py-4 lg:px-6" style={{ borderColor: 'var(--line)', background: 'rgba(10,10,10,0.88)' }}>
+          <div className="border-t px-4 py-4 lg:px-6" style={{ borderColor: 'var(--line)', background: 'var(--footer-bg)' }}>
             <div className="mx-auto max-w-[760px]">
               <Composer
                 compact
@@ -360,7 +364,7 @@ function Composer({
           type="submit"
           disabled={!input.trim() || loading}
           className="flex h-9 flex-shrink-0 items-center gap-2 rounded-xl px-4 text-[13px] font-medium transition-opacity disabled:opacity-30"
-          style={{ background: 'var(--green)', color: '#07150f' }}
+          style={{ background: 'var(--green)', color: 'var(--button-text)' }}
         >
           <SendIcon className="h-4 w-4" />
           Send

@@ -1,6 +1,5 @@
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
-pymupdf==1.24.14
 sentence-transformers==3.3.1
 chromadb==0.5.23
 google-generativeai==0.8.3

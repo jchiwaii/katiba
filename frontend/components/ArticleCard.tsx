@@ -17,11 +17,11 @@ export default function ArticleCard({ article, rank }: { article: Article; rank:
     <div className="overflow-hidden rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--line)' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.03]"
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--soft-bg-hover)]"
       >
         <span
           className="flex-shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium"
-          style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--muted)', border: '1px solid var(--line)' }}
+          style={{ background: 'var(--soft-bg-strong)', color: 'var(--muted)', border: '1px solid var(--line)' }}
         >
           Article {article.article}
         </span>

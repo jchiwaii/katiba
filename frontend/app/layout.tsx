@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Lora, IBM_Plex_Sans } from 'next/font/google'
+import { THEME_INIT_SCRIPT } from '@/lib/theme'
 import './globals.css'
 
 const lora = Lora({
@@ -22,8 +23,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${lora.variable} ${ibm.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+    <html lang="en" className={`${lora.variable} ${ibm.variable} h-full`} suppressHydrationWarning>
+      <body className="min-h-full">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {children}
+      </body>
     </html>
   )
 }

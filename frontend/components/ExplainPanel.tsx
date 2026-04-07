@@ -34,12 +34,12 @@ export default function ExplainPanel({ question }: { question: string }) {
   if (state === 'idle') return (
     <div className="mt-3 flex gap-2">
       <button onClick={() => load(false)}
-        className="rounded-full border px-2.5 py-1 text-[10px] transition-colors hover:bg-white/[0.03]"
+        className="rounded-full border px-2.5 py-1 text-[10px] transition-colors hover:bg-[var(--soft-bg-hover)]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain with AI
       </button>
       <button onClick={() => load(true)}
-        className="rounded-full border px-2.5 py-1 text-[10px] transition-colors hover:bg-white/[0.03]"
+        className="rounded-full border px-2.5 py-1 text-[10px] transition-colors hover:bg-[var(--soft-bg-hover)]"
         style={{ border: '1px solid var(--line)', color: 'var(--muted)' }}>
         Explain Simply
       </button>
@@ -63,7 +63,7 @@ export default function ExplainPanel({ question }: { question: string }) {
   if (!data) return null
 
   return (
-    <div className="mt-3 space-y-3 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)' }}>
+    <div className="mt-3 space-y-3 rounded-2xl p-4" style={{ background: 'var(--soft-bg)', border: '1px solid var(--line)' }}>
       <div className="flex justify-between items-center">
         <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: 'var(--dim)' }}>
           AI · {eli5 ? 'Simple' : 'Standard'}
@@ -86,7 +86,7 @@ export default function ExplainPanel({ question }: { question: string }) {
       {data.references.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {data.references.map(r => (
-            <span key={r} className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+            <span key={r} className="rounded-full px-2.5 py-0.5 text-[11px]" style={{ background: 'var(--soft-bg)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
               {r}
             </span>
           ))}

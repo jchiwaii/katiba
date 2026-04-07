@@ -1,25 +1,27 @@
+# Build context must be the project root:
+#   docker build -f backend/Dockerfile -t katiba-backend .
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system deps for PyMuPDF
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libmupdf-dev \
-    && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements.txt .
+# Install CPU-only torch first to avoid 2GB CUDA downloads
+RUN pip install --no-cache-dir --timeout=120 --retries=5 \
+    torch --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --timeout=120 --retries=5 -r requirements.txt
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Pre-download embedding model at build time — avoids slow cold starts on Cloud Run
+ENV SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentence_transformers
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')"
 
-COPY . .
+# Backend source
+COPY backend/ .
 
-# Run ingestion on first deploy if chroma data doesn't exist
-# In production, mount a persistent volume at /data/chroma
-RUN mkdir -p /data/chroma /data
-
-# Copy constitution PDF into container data dir
-COPY ../data/ken127322.pdf /data/ken127322.pdf 2>/dev/null || true
+# Bake in pre-built vector data — no ingest.py needed at runtime
+COPY data/chroma/ /data/chroma/
+COPY data/chunks.json /data/chunks.json
 
 ENV PYTHONUNBUFFERED=1
 
-# Start: ingest if needed, then serve
-CMD ["sh", "-c", "python ingest.py && uvicorn main:app --host 0.0.0.0 --port 8000"]
+# Cloud Run injects PORT (default 8080)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]

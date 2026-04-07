@@ -1,15 +1,62 @@
 @import "tailwindcss";
 
-:root {
-  --bg:       #0c0c0c;
-  --card:     #151515;
-  --line:     #242424;
-  --text:     #f2f2f2;
-  --muted:    #9b9b9b;
-  --dim:      #626262;
-  --green:    #39d6a4;
-  --green-bg: #12221d;
-  --user-bg:  #18221f;
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg:             #0c0c0c;
+  --card:           #151515;
+  --line:           #242424;
+  --text:           #f2f2f2;
+  --muted:          #9b9b9b;
+  --dim:            #626262;
+  --green:          #39d6a4;
+  --green-bg:       #12221d;
+  --user-bg:        #18221f;
+  --shell:          rgba(8, 8, 8, 0.78);
+  --header-bg:      rgba(10, 10, 10, 0.82);
+  --footer-bg:      rgba(10, 10, 10, 0.88);
+  --soft-bg:        rgba(255, 255, 255, 0.03);
+  --soft-bg-strong: rgba(255, 255, 255, 0.04);
+  --soft-bg-hover:  rgba(255, 255, 255, 0.03);
+  --danger-bg:      #1f0e0e;
+  --danger-text:    #f87171;
+  --button-text:    #07150f;
+  --body-glow:      rgba(255, 255, 255, 0.035);
+  --body-top:       #101010;
+  --body-mid:       #0c0c0c;
+  --body-bottom:    #090909;
+  --selection-bg:   #1a4d30;
+  --selection-text: #ffffff;
+  --scroll-thumb:   #2a2a2a;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg:             #f4f6f2;
+  --card:           #ffffff;
+  --line:           #e2e8e1;
+  --text:           #171b17;
+  --muted:          #516056;
+  --dim:            #7a877d;
+  --green:          #23946f;
+  --green-bg:       #ddf3ea;
+  --user-bg:        #e3f2eb;
+  --shell:          rgba(255, 255, 255, 0.82);
+  --header-bg:      rgba(248, 250, 247, 0.9);
+  --footer-bg:      rgba(248, 250, 247, 0.94);
+  --soft-bg:        rgba(15, 23, 42, 0.03);
+  --soft-bg-strong: rgba(15, 23, 42, 0.05);
+  --soft-bg-hover:  rgba(15, 23, 42, 0.045);
+  --danger-bg:      #fff1f1;
+  --danger-text:    #b42318;
+  --button-text:    #07150f;
+  --body-glow:      rgba(35, 148, 111, 0.08);
+  --body-top:       #fafbf8;
+  --body-mid:       #f4f6f2;
+  --body-bottom:    #eef2ed;
+  --selection-bg:   #ccebdd;
+  --selection-text: #102019;
+  --scroll-thumb:   #c6d0c8;
 }
 
 @theme inline {
@@ -24,8 +71,8 @@ html, body { height: 100%; margin: 0; }
 
 body {
   background:
-    radial-gradient(circle at top, rgba(255,255,255,0.035), transparent 30rem),
-    linear-gradient(180deg, #101010 0%, #0c0c0c 55%, #090909 100%);
+    radial-gradient(circle at top, var(--body-glow), transparent 30rem),
+    linear-gradient(180deg, var(--body-top) 0%, var(--body-mid) 55%, var(--body-bottom) 100%);
   color: var(--text);
   font-family: var(--font-ibm), system-ui, sans-serif;
   font-size: 14px;
@@ -33,9 +80,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::selection { background: #1a4d30; color: #fff; }
+::selection { background: var(--selection-bg); color: var(--selection-text); }
 button, textarea, input { font: inherit; }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; }
