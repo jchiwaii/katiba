@@ -16,7 +16,7 @@ from chromadb.config import Settings
 import google.generativeai as genai
 from sentence_transformers import SentenceTransformer
 
-from prompts import SYSTEM_PROMPT, ELI5_ADDITION
+from prompts import SYSTEM_PROMPT
 
 CHROMA_DIR = Path(__file__).parent.parent / "data" / "chroma"
 CHUNKS_FILE = Path(__file__).parent.parent / "data" / "chunks.json"
@@ -287,13 +287,10 @@ def build_context(chunks: list[dict]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def generate(question: str, context: str, eli5: bool = False) -> str:
+def generate(question: str, context: str) -> str:
     _configure_gemini()
-    system = SYSTEM_PROMPT
-    if eli5:
-        system += ELI5_ADDITION
 
-    prompt = f"""{system}
+    prompt = f"""{SYSTEM_PROMPT}
 
 --- CONSTITUTIONAL TEXT ---
 {context}
