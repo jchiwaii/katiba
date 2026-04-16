@@ -241,10 +241,10 @@ export default function ChatInterface() {
                 {msg.articles.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] px-1" style={{ color: 'var(--dim)' }}>
-                      Constitutional Reference
+                      Sources
                     </p>
-                    {msg.articles.slice(0, 5).map((art, i) => (
-                      <ArticleCard key={`${art.article}-${i}`} article={art} rank={i} />
+                    {msg.articles.slice(0, 6).map((art, i) => (
+                      <ArticleCard key={`${art.source_type ?? 'constitution'}-${art.article ?? art.source_title}-${i}`} article={art} rank={i} />
                     ))}
                   </div>
                 )}
@@ -294,7 +294,7 @@ export default function ChatInterface() {
             </button>
           </form>
           <p className="mt-2 text-center text-[11px]" style={{ color: 'var(--dim)' }}>
-            Answers cite exact articles · Constitution of Kenya, 2010
+            Answers cite exact articles and related implementation laws
           </p>
         </div>
 

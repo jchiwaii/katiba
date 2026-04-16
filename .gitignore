@@ -7,6 +7,9 @@ backend/*.pyc
 # Data (chroma DB is large; chunks.json is generated)
 data/chroma/
 data/chunks.json
+data/implementation_laws/chunks.json
+data/implementation_laws/failures.json
+data/implementation_laws/raw/
 
 # Next.js
 frontend/.next/

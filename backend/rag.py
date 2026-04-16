@@ -20,11 +20,14 @@ from prompts import SYSTEM_PROMPT
 
 CHROMA_DIR = Path(__file__).parent.parent / "data" / "chroma"
 CHUNKS_FILE = Path(__file__).parent.parent / "data" / "chunks.json"
+IMPLEMENTATION_CHUNKS_FILE = Path(__file__).parent.parent / "data" / "implementation_laws" / "chunks.json"
 COLLECTION_NAME = "constitution"
+IMPLEMENTATION_COLLECTION_NAME = "implementation_laws"
 EMBEDDING_MODEL = "multi-qa-MiniLM-L6-cos-v1"
 GEMINI_MODEL = "gemini-2.5-flash"
 SEMANTIC_TOP_K = 6
 KEYWORD_TOP_K = 3
+IMPLEMENTATION_TOP_K = 3
 
 # Plain-English → constitutional vocabulary synonyms
 # Covers the most common vocabulary mismatches for a Kenyan user
@@ -150,7 +153,10 @@ STOP_WORDS = {
 # Singletons — loaded once at startup
 _model: SentenceTransformer | None = None
 _collection = None
+_implementation_collection = None
+_implementation_collection_unavailable = False
 _all_chunks: list[dict] | None = None
+_implementation_chunks: list[dict] | None = None
 
 
 def _get_model() -> SentenceTransformer:
@@ -171,6 +177,24 @@ def _get_collection():
     return _collection
 
 
+def _get_implementation_collection():
+    """Return the optional implementation-law collection if it has been ingested."""
+    global _implementation_collection, _implementation_collection_unavailable
+    if _implementation_collection_unavailable:
+        return None
+    if _implementation_collection is None:
+        client = chromadb.PersistentClient(
+            path=str(CHROMA_DIR),
+            settings=Settings(anonymized_telemetry=False),
+        )
+        try:
+            _implementation_collection = client.get_collection(IMPLEMENTATION_COLLECTION_NAME)
+        except Exception:
+            _implementation_collection_unavailable = True
+            return None
+    return _implementation_collection
+
+
 def _get_main_chunks() -> list[dict]:
     """Load only main constitution chunks (not schedules) from chunks.json."""
     global _all_chunks
@@ -179,6 +203,18 @@ def _get_main_chunks() -> list[dict]:
             data = json.load(f)
         _all_chunks = [c for c in data if not c.get("is_schedule", False)]
     return _all_chunks
+
+
+def _get_implementation_chunks() -> list[dict]:
+    """Load cached implementation-law chunks when available."""
+    global _implementation_chunks
+    if _implementation_chunks is None:
+        if not IMPLEMENTATION_CHUNKS_FILE.exists():
+            _implementation_chunks = []
+        else:
+            with open(IMPLEMENTATION_CHUNKS_FILE, encoding="utf-8") as f:
+                _implementation_chunks = json.load(f)
+    return _implementation_chunks
 
 
 def _configure_gemini():
@@ -233,11 +269,84 @@ def keyword_search(question: str, top_k: int = KEYWORD_TOP_K) -> list[dict]:
                 "title": c["title"],
                 "chapter": c.get("chapter", ""),
                 "part": c.get("part", ""),
+                "source_type": "constitution",
             },
             "distance": max(0.0, 1.0 - score / max(len(terms), 1)),
         }
         for score, c in scored[:top_k]
     ]
+
+
+def implementation_keyword_search(question: str, top_k: int = IMPLEMENTATION_TOP_K) -> list[dict]:
+    """Keyword search over ordinary implementation Acts."""
+    terms = _expand_terms(question)
+    if not terms:
+        return []
+
+    chunks = _get_implementation_chunks()
+    scored = []
+    for chunk in chunks:
+        search_text = (
+            f"{chunk.get('source_title','')} {chunk.get('citation','')} "
+            f"{chunk.get('category','')} {chunk.get('constitution_articles','')} "
+            f"{chunk.get('section_title','')} {chunk.get('text','')}"
+        ).lower()
+        score = sum(1 for t in terms if t in search_text)
+        if score > 0:
+            scored.append((score, chunk))
+
+    scored.sort(reverse=True, key=lambda x: x[0])
+    return [
+        {
+            "chunk_id": c["chunk_id"],
+            "text": c["text"],
+            "metadata": {
+                "source_id": c.get("source_id", ""),
+                "source_title": c.get("source_title", ""),
+                "title": c.get("source_title", ""),
+                "citation": c.get("citation", ""),
+                "source_url": c.get("source_url", ""),
+                "source_type": c.get("source_type", "implementation_law"),
+                "status": c.get("status", "current_law"),
+                "category": c.get("category", ""),
+                "constitution_articles": c.get("constitution_articles", ""),
+                "section_title": c.get("section_title", ""),
+            },
+            "distance": max(0.0, 1.0 - score / max(len(terms), 1)),
+        }
+        for score, c in scored[:top_k]
+    ]
+
+
+def retrieve_implementation_laws(question: str, embedding: list[float]) -> list[dict]:
+    """Retrieve implementation-law chunks from semantic and keyword indexes."""
+    semantic: list[dict] = []
+    collection = _get_implementation_collection()
+    if collection is not None:
+        results = collection.query(
+            query_embeddings=[embedding],
+            n_results=IMPLEMENTATION_TOP_K,
+            include=["documents", "metadatas", "distances"],
+        )
+        if results.get("ids") and results["ids"][0]:
+            semantic = [
+                {
+                    "chunk_id": results["ids"][0][i],
+                    "text": results["documents"][0][i],
+                    "metadata": results["metadatas"][0][i],
+                    "distance": results["distances"][0][i],
+                }
+                for i in range(len(results["ids"][0]))
+            ]
+
+    keyword = implementation_keyword_search(question)
+    seen = {c["chunk_id"] for c in semantic}
+    merged = list(semantic)
+    for kc in keyword:
+        if kc["chunk_id"] not in seen:
+            merged.append(kc)
+            seen.add(kc["chunk_id"])
+    return merged[:IMPLEMENTATION_TOP_K]
 
 
 def retrieve(question: str) -> list[dict]:
@@ -267,11 +376,20 @@ def retrieve(question: str) -> list[dict]:
 
     # 3. Merge: semantic first, keyword fills gaps
     seen = {c["chunk_id"] for c in semantic}
-    merged = list(semantic)
+    constitution_results = list(semantic)
     for kc in keyword:
         if kc["chunk_id"] not in seen:
-            merged.append(kc)
+            constitution_results.append(kc)
             seen.add(kc["chunk_id"])
+
+    # 4. Add ordinary implementation laws after the leading constitutional sources.
+    implementation = retrieve_implementation_laws(question, embedding)
+    merged = []
+    seen = set()
+    for c in constitution_results[:4] + implementation + constitution_results[4:]:
+        if c["chunk_id"] not in seen:
+            merged.append(c)
+            seen.add(c["chunk_id"])
 
     return merged
 
@@ -280,9 +398,18 @@ def build_context(chunks: list[dict]) -> str:
     parts = []
     for c in chunks:
         meta = c["metadata"]
-        header = f"Article {meta['article']} – {meta['title']}"
-        if meta.get("chapter"):
-            header += f"\n{meta['chapter']}"
+        if meta.get("source_type") == "implementation_law":
+            header = f"Implementation Law: {meta.get('source_title') or meta.get('title', 'Unknown law')}"
+            if meta.get("citation"):
+                header += f" ({meta['citation']})"
+            if meta.get("section_title"):
+                header += f"\n{meta['section_title']}"
+            if meta.get("constitution_articles"):
+                header += f"\nLinked Constitution Article(s): {meta['constitution_articles']}"
+        else:
+            header = f"Constitution Article {meta['article']} – {meta['title']}"
+            if meta.get("chapter"):
+                header += f"\n{meta['chapter']}"
         parts.append(f"[{header}]\n{c['text']}")
     return "\n\n---\n\n".join(parts)
 
@@ -292,9 +419,9 @@ def generate(question: str, context: str) -> str:
 
     prompt = f"""{SYSTEM_PROMPT}
 
---- CONSTITUTIONAL TEXT ---
+--- PROVIDED SOURCES ---
 {context}
---- END OF TEXT ---
+--- END OF SOURCES ---
 
 Question: {question}
 """
@@ -371,12 +498,13 @@ def parse_response(raw: str) -> dict:
 def answer(question: str, eli5: bool = False) -> dict:
     chunks = retrieve(question)
     context = build_context(chunks)
-    raw = generate(question, context, eli5=eli5)
+    raw = generate(question, context)
     result = parse_response(raw)
     result["chunks_used"] = [
         {
-            "article": c["metadata"]["article"],
-            "title": c["metadata"]["title"],
+            "article": c["metadata"].get("article"),
+            "title": c["metadata"].get("title") or c["metadata"].get("source_title", ""),
+            "source_type": c["metadata"].get("source_type", "constitution"),
             "text": c["text"][:300] + "..." if len(c["text"]) > 300 else c["text"],
         }
         for c in chunks

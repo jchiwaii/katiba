@@ -40,11 +40,17 @@ class AskRequest(BaseModel):
 
 
 class ArticleResult(BaseModel):
-    article: int
+    article: Optional[int] = None
     title: str
-    chapter: str
-    part: str
+    chapter: str = ""
+    part: str = ""
     text: str
+    source_type: str = "constitution"
+    source_title: Optional[str] = None
+    citation: Optional[str] = None
+    source_url: Optional[str] = None
+    section_title: Optional[str] = None
+    status: Optional[str] = None
 
 
 class AskResponse(BaseModel):
@@ -64,11 +70,17 @@ def ask(req: AskRequest):
     chunks = retrieve(question)
     articles = [
         ArticleResult(
-            article=c["metadata"]["article"],
-            title=c["metadata"]["title"],
+            article=c["metadata"].get("article"),
+            title=c["metadata"].get("title") or c["metadata"].get("source_title", ""),
             chapter=c["metadata"].get("chapter", ""),
             part=c["metadata"].get("part", ""),
             text=c["text"],
+            source_type=c["metadata"].get("source_type", "constitution"),
+            source_title=c["metadata"].get("source_title"),
+            citation=c["metadata"].get("citation"),
+            source_url=c["metadata"].get("source_url"),
+            section_title=c["metadata"].get("section_title"),
+            status=c["metadata"].get("status"),
         )
         for c in chunks
     ]
