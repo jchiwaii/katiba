@@ -14,11 +14,13 @@ from pathlib import Path
 import chromadb
 from chromadb.config import Settings
 import google.generativeai as genai
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
 from prompts import SYSTEM_PROMPT
 
 CHROMA_DIR = Path(__file__).parent.parent / "data" / "chroma"
+BACKEND_ENV_FILE = Path(__file__).parent / ".env"
 CHUNKS_FILE = Path(__file__).parent.parent / "data" / "chunks.json"
 IMPLEMENTATION_CHUNKS_FILE = Path(__file__).parent.parent / "data" / "implementation_laws" / "chunks.json"
 COLLECTION_NAME = "constitution"
@@ -28,6 +30,8 @@ GEMINI_MODEL = "gemini-2.5-flash"
 SEMANTIC_TOP_K = 6
 KEYWORD_TOP_K = 3
 IMPLEMENTATION_TOP_K = 3
+
+load_dotenv(BACKEND_ENV_FILE)
 
 # Plain-English → constitutional vocabulary synonyms
 # Covers the most common vocabulary mismatches for a Kenyan user
