@@ -436,6 +436,41 @@ Question: {question}
     return response.text
 
 
+def generate_explanation(question: str, context: str, eli5: bool = False) -> str:
+    _configure_gemini()
+
+    style = (
+        "Explain it very simply, using short everyday language."
+        if eli5
+        else "Explain it clearly and directly for a non-lawyer."
+    )
+    prompt = f"""{SYSTEM_PROMPT}
+
+Return exactly these sections:
+Answer:
+References:
+Exact Text:
+Simple Explanation:
+
+{style}
+
+--- PROVIDED SOURCES ---
+{context}
+--- END OF SOURCES ---
+
+Question: {question}
+"""
+    model = genai.GenerativeModel(
+        GEMINI_MODEL,
+        generation_config=genai.GenerationConfig(
+            temperature=0.1,
+            max_output_tokens=2048,
+        ),
+    )
+    response = model.generate_content(prompt)
+    return response.text
+
+
 def parse_response(raw: str) -> dict:
     """
     Extract structured fields from LLM output.
@@ -498,7 +533,7 @@ def parse_response(raw: str) -> dict:
 def answer(question: str, eli5: bool = False) -> dict:
     chunks = retrieve(question)
     context = build_context(chunks)
-    raw = generate(question, context)
+    raw = generate_explanation(question, context, eli5=eli5)
     result = parse_response(raw)
     result["chunks_used"] = [
         {
