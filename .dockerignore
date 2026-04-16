@@ -5,3 +5,4 @@ backend/*.pyc
 frontend/node_modules/
 frontend/.next/
 data/ken127322.pdf
+data/implementation_laws/raw/

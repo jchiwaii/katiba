@@ -20,6 +20,7 @@ COPY backend/ .
 # Bake in pre-built vector data — no ingest.py needed at runtime
 COPY data/chroma/ /data/chroma/
 COPY data/chunks.json /data/chunks.json
+COPY data/implementation_laws/chunks.json /data/implementation_laws/chunks.json
 
 ENV PYTHONUNBUFFERED=1
 
