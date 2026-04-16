@@ -30,6 +30,11 @@ GEMINI_MODEL = "gemini-2.5-flash"
 SEMANTIC_TOP_K = 6
 KEYWORD_TOP_K = 3
 IMPLEMENTATION_TOP_K = 3
+SCOPE_DISTANCE_THRESHOLD = 0.62
+OUT_OF_SCOPE_MESSAGE = (
+    "I can only help with questions about the Constitution of Kenya, constitutional rights, "
+    "public offices, elections, devolution, and related constitutional law."
+)
 
 load_dotenv(BACKEND_ENV_FILE)
 
@@ -154,6 +159,62 @@ STOP_WORDS = {
     "about", "any", "all", "get", "has", "had", "been", "would", "could", "should",
 }
 
+SCOPE_PATTERNS = [
+    r"\bconstitution\b",
+    r"\bconstitutional\b",
+    r"\bkatiba\b",
+    r"\barticle\s+\d+[a-z]?\b",
+    r"\bchapter\s+\w+\b",
+    r"\bbill of rights\b",
+    r"\bright(?:s)?\b",
+    r"\bfreedom(?:s)?\b",
+    r"\bgovernor\b",
+    r"\bpresident\b",
+    r"\bparliament\b",
+    r"\bsenate\b",
+    r"\bnational assembly\b",
+    r"\bmember of parliament\b",
+    r"\bjudiciary\b",
+    r"\bcourt\b",
+    r"\bjudge\b",
+    r"\btribunal\b",
+    r"\bcabinet\b",
+    r"\bexecutive\b",
+    r"\bcounty\b",
+    r"\bdevolution\b",
+    r"\belection(?:s|al)?\b",
+    r"\bvote\b",
+    r"\bvoting\b",
+    r"\biebc\b",
+    r"\bpolitical part(?:y|ies)\b",
+    r"\bpetition\b",
+    r"\bpolice\b",
+    r"\barrest(?:ed)?\b",
+    r"\bdetention\b",
+    r"\bdetained\b",
+    r"\bbail\b",
+    r"\bcitizenship\b",
+    r"\bcitizen\b",
+    r"\bimmigration\b",
+    r"\bland\b",
+    r"\beviction\b",
+    r"\bprivacy\b",
+    r"\bexpression\b",
+    r"\bmedia\b",
+    r"\breligion\b",
+    r"\bprotest\b",
+    r"\bdemonstrat(?:e|ion|ing)\b",
+    r"\bpicket\b",
+    r"\bintegrity\b",
+    r"\bcorruption\b",
+    r"\bpublic finance\b",
+    r"\bbudget\b",
+    r"\btax(?:ation)?\b",
+    r"\bsecurity\b",
+    r"\bdefen[cs]e\b",
+    r"\bcommission\b",
+]
+
 # Singletons — loaded once at startup
 _model: SentenceTransformer | None = None
 _collection = None
@@ -226,6 +287,35 @@ def _configure_gemini():
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY environment variable not set")
     genai.configure(api_key=api_key)
+
+
+def is_in_scope(question: str) -> bool:
+    """
+    Accept only Constitution- and rights-related questions.
+
+    We first allow obvious constitutional/legal phrasing, then fall back to a
+    semantic similarity check against the Constitution corpus to catch relevant
+    plain-language questions that don't use formal legal terms.
+    """
+    lowered = question.lower()
+    if any(re.search(pattern, lowered) for pattern in SCOPE_PATTERNS):
+        return True
+
+    try:
+        model = _get_model()
+        collection = _get_collection()
+        embedding = model.encode([question])[0].tolist()
+        result = collection.query(
+            query_embeddings=[embedding],
+            n_results=1,
+            include=["distances"],
+        )
+        top_distance = result["distances"][0][0]
+        return top_distance <= SCOPE_DISTANCE_THRESHOLD
+    except Exception:
+        # If scope classification cannot run, fail closed rather than leaking
+        # unrelated answers and source cards.
+        return False
 
 
 def _expand_terms(question: str) -> set[str]:

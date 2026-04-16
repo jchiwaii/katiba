@@ -13,7 +13,16 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from rag import retrieve, build_context, generate, answer as explain_answer, _get_model, _get_collection
+from rag import (
+    OUT_OF_SCOPE_MESSAGE,
+    retrieve,
+    build_context,
+    generate,
+    answer as explain_answer,
+    is_in_scope,
+    _get_model,
+    _get_collection,
+)
 
 
 @asynccontextmanager
@@ -97,6 +106,12 @@ def _format_reference(meta: dict) -> str:
 @app.post("/ask", response_model=AskResponse)
 def ask(req: AskRequest):
     question = _validate_question(req.question)
+    if not is_in_scope(question):
+        return AskResponse(
+            question=question,
+            answer=OUT_OF_SCOPE_MESSAGE,
+            articles=[],
+        )
 
     chunks = retrieve(question)
     articles = [
@@ -130,6 +145,13 @@ def ask(req: AskRequest):
 @app.post("/explain", response_model=ExplainResponse)
 def explain(req: ExplainRequest):
     question = _validate_question(req.question)
+    if not is_in_scope(question):
+        return ExplainResponse(
+            answer=OUT_OF_SCOPE_MESSAGE,
+            references=[],
+            exact_text="",
+            explanation="",
+        )
 
     try:
         result = explain_answer(question, eli5=req.eli5)

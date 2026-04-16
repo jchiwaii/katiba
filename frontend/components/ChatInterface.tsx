@@ -189,7 +189,7 @@ export default function ChatInterface() {
                   Ask the Constitution
                 </h1>
                 <p className="text-[13px] mb-7" style={{ color: 'var(--muted)' }}>
-                  Ask anything in plain language — get a direct answer grounded in the Constitution.
+                  Ask about constitutional rights, public offices, elections, devolution, and the Constitution of Kenya.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {COMMON_QUESTIONS.map(q => (
@@ -279,7 +279,7 @@ export default function ChatInterface() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); search(input) } }}
-              placeholder="Ask anything about the Constitution…"
+              placeholder="Ask about rights, offices, elections, or the Constitution…"
               rows={1}
               className="flex-1 resize-none rounded-xl px-4 py-2.5 text-[13px] outline-none transition-colors"
               style={{ background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--text)', maxHeight: '140px' }}
