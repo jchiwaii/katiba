@@ -10,6 +10,7 @@ interface Message {
   question: string
   answer: string | null
   articles: Article[]
+  status: 'pending' | 'done' | 'error'
   error?: string
 }
 
@@ -45,14 +46,14 @@ const CHAPTERS = [
 
 export default function ChatInterface() {
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
   const [messages, setMessages] = useState<Message[]>([])
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages, pendingCount])
 
   useEffect(() => {
     const node = inputRef.current
@@ -63,9 +64,18 @@ export default function ChatInterface() {
 
   async function search(query: string) {
     const q = query.trim()
-    if (!q || loading) return
+    if (!q) return
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     setInput('')
-    setLoading(true)
+    setMessages(prev => [...prev, {
+      id,
+      question: q,
+      answer: null,
+      articles: [],
+      status: 'pending',
+    }])
+    setPendingCount(count => count + 1)
+
     try {
       const res = await fetch('/api/ask', {
         method: 'POST',
@@ -74,22 +84,28 @@ export default function ChatInterface() {
       })
       if (!res.ok) throw new Error()
       const data = await res.json()
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}`,
-        question: q,
-        answer: data.answer ?? null,
-        articles: data.articles ?? [],
-      }])
+      setMessages(prev => prev.map(msg => (
+        msg.id === id
+          ? {
+              ...msg,
+              answer: data.answer ?? null,
+              articles: data.articles ?? [],
+              status: 'done',
+            }
+          : msg
+      )))
     } catch {
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}`,
-        question: q,
-        answer: null,
-        articles: [],
-        error: 'Could not reach the server. Please try again.',
-      }])
+      setMessages(prev => prev.map(msg => (
+        msg.id === id
+          ? {
+              ...msg,
+              status: 'error',
+              error: 'Could not reach the server. Please try again.',
+            }
+          : msg
+      )))
     } finally {
-      setLoading(false)
+      setPendingCount(count => Math.max(0, count - 1))
     }
   }
 
@@ -183,7 +199,7 @@ export default function ChatInterface() {
           <div className="mx-auto max-w-2xl px-4 py-6 space-y-8">
 
             {/* Empty state */}
-            {messages.length === 0 && !loading && (
+            {messages.length === 0 && (
               <div className="pt-4">
                 <h1 className="text-[22px] font-semibold mb-1" style={{ fontFamily: 'var(--font-lora), Georgia, serif', color: 'var(--text)' }}>
                   Ask the Constitution
@@ -237,6 +253,24 @@ export default function ChatInterface() {
                   </div>
                 )}
 
+                {/* Assistant thinking */}
+                {msg.status === 'pending' && (
+                  <div className="flex justify-start">
+                    <div
+                      className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5"
+                      style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
+                    >
+                      {[0, 1, 2].map(i => (
+                        <span
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full animate-bounce"
+                          style={{ background: 'var(--green)', animationDelay: `${i * 150}ms` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Reference articles */}
                 {msg.articles.length > 0 && (
                   <div className="space-y-2">
@@ -251,21 +285,6 @@ export default function ChatInterface() {
 
               </div>
             ))}
-
-            {/* Loading */}
-            {loading && (
-              <div className="flex justify-end">
-                <div className="rounded-2xl rounded-tr-sm px-4 py-3 flex items-center gap-1.5" style={{ background: 'var(--user-bg)' }}>
-                  {[0, 1, 2].map(i => (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full animate-bounce"
-                      style={{ background: 'var(--green)', animationDelay: `${i * 150}ms` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div ref={bottomRef} />
           </div>
@@ -286,7 +305,7 @@ export default function ChatInterface() {
             />
             <button
               type="submit"
-              disabled={!input.trim() || loading}
+              disabled={!input.trim()}
               className="flex-shrink-0 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-opacity disabled:opacity-30"
               style={{ background: 'var(--green)', color: 'var(--button-text)' }}
             >
