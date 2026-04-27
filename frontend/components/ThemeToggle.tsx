@@ -5,8 +5,8 @@ export default function ThemeToggle() {
       data-theme-toggle="true"
       aria-label="Toggle theme"
       title="Toggle theme"
-      className="relative z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-colors hover:bg-[var(--soft-bg-hover)]"
-      style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--muted)' }}
+      className="relative z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:bg-[var(--soft-bg-hover)]"
+      style={{ borderColor: 'var(--line)', background: 'var(--panel-strong)', color: 'var(--muted)' }}
     >
       <ThemeIcon className="h-4 w-4" />
     </button>

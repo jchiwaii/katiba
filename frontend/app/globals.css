@@ -5,6 +5,11 @@
   color-scheme: dark;
   --bg:             #0c0c0c;
   --card:           #151515;
+  --panel:          #101010;
+  --panel-strong:   #1a1a1a;
+  --answer-bg:      rgba(255, 255, 255, 0.045);
+  --input-bg:       rgba(255, 255, 255, 0.055);
+  --source-bg:      rgba(255, 255, 255, 0.028);
   --line:           #242424;
   --text:           #f2f2f2;
   --muted:          #9b9b9b;
@@ -28,12 +33,20 @@
   --selection-bg:   #1a4d30;
   --selection-text: #ffffff;
   --scroll-thumb:   #2a2a2a;
+  --grid-line:      rgba(255, 255, 255, 0.022);
+  --ring:           rgba(57, 214, 164, 0.42);
+  --shadow-soft:    0 22px 70px rgba(0, 0, 0, 0.32);
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
   --bg:             #f4f6f2;
   --card:           #ffffff;
+  --panel:          #f7f9f5;
+  --panel-strong:   #ffffff;
+  --answer-bg:      rgba(255, 255, 255, 0.72);
+  --input-bg:       rgba(255, 255, 255, 0.86);
+  --source-bg:      rgba(15, 23, 42, 0.025);
   --line:           #e2e8e1;
   --text:           #171b17;
   --muted:          #516056;
@@ -57,6 +70,9 @@
   --selection-bg:   #ccebdd;
   --selection-text: #102019;
   --scroll-thumb:   #c6d0c8;
+  --grid-line:      rgba(24, 38, 28, 0.035);
+  --ring:           rgba(35, 148, 111, 0.34);
+  --shadow-soft:    0 22px 70px rgba(26, 43, 31, 0.09);
 }
 
 @theme inline {
@@ -71,8 +87,11 @@ html, body { height: 100%; margin: 0; }
 
 body {
   background:
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(180deg, var(--grid-line) 1px, transparent 1px),
     radial-gradient(circle at top, var(--body-glow), transparent 30rem),
     linear-gradient(180deg, var(--body-top) 0%, var(--body-mid) 55%, var(--body-bottom) 100%);
+  background-size: 28px 28px, 28px 28px, auto, auto;
   color: var(--text);
   font-family: var(--font-ibm), system-ui, sans-serif;
   font-size: 14px;
@@ -82,6 +101,16 @@ body {
 
 ::selection { background: var(--selection-bg); color: var(--selection-text); }
 button, textarea, input { font: inherit; }
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+textarea::placeholder,
+input::placeholder {
+  color: var(--dim);
+}
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

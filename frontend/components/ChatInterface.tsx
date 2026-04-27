@@ -122,36 +122,29 @@ export default function ChatInterface() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
-
-      {/* ── Sidebar ── */}
       <aside
-        className="hidden h-screen w-[252px] flex-shrink-0 flex-col border-r lg:flex"
+        className="hidden h-screen w-[268px] flex-shrink-0 flex-col border-r lg:flex"
         style={{ borderColor: 'var(--line)', background: 'var(--shell)' }}
       >
-        <div className="flex h-full flex-col px-4 py-5">
-
-          {/* Wordmark */}
-          <button onClick={clearSession} className="flex items-center gap-2.5 text-left mb-5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--soft-bg)', color: 'var(--green)' }}>
+        <div className="flex h-full flex-col px-4 py-4">
+          <button onClick={clearSession} className="mb-4 flex items-center gap-2.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-[var(--soft-bg-hover)]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--panel-strong)', color: 'var(--green)' }}>
               <BrandIcon className="h-3.5 w-3.5" />
             </span>
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--font-lora), Georgia, serif' }}>
-              Katiba
-            </span>
+            <span className="text-sm font-semibold tracking-[-0.01em]" style={{ color: 'var(--text)', fontFamily: 'var(--font-lora), Georgia, serif' }}>Katiba</span>
           </button>
 
-          {/* New Chat */}
           <button
             onClick={clearSession}
-            className="w-full rounded-xl border px-3 py-2.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--soft-bg-hover)] mb-5"
-            style={{ borderColor: 'var(--line)', background: 'var(--card)', color: 'var(--text)' }}
+            className="mb-4 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-[12px] font-medium transition-colors hover:bg-[var(--soft-bg-hover)]"
+            style={{ borderColor: 'var(--line)', background: 'var(--panel-strong)', color: 'var(--text)' }}
           >
-            + New Chat
+            <span>New Chat</span>
+            <span className="text-[14px]" style={{ color: 'var(--green)' }}>+</span>
           </button>
 
-          {/* Chapters — scrollable */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--dim)' }}>
+          <div className="min-h-0 flex-1 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: 'var(--dim)' }}>
               Chapters
             </p>
             <div className="space-y-0.5">
@@ -159,34 +152,37 @@ export default function ChatInterface() {
                 <button
                   key={ch.label}
                   onClick={() => search(ch.query)}
-                  className="block w-full rounded-lg px-2.5 py-1.5 text-left text-[12px] transition-colors hover:bg-[var(--soft-bg-hover)]"
-                  style={{ color: 'var(--muted)' }}
+                  className="block w-full rounded-lg px-2.5 py-1.5 text-left text-[12px] leading-5 text-[var(--muted)] transition-colors hover:bg-[var(--soft-bg-hover)] hover:text-[var(--text)]"
                 >
                   {ch.label}
                 </button>
               ))}
             </div>
           </div>
-
         </div>
       </aside>
 
-      {/* ── Main ── */}
       <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
-
-        {/* Header */}
-        <header className="border-b px-4 py-3 lg:px-6 flex-shrink-0" style={{ borderColor: 'var(--line)', background: 'var(--header-bg)' }}>
+        <header className="flex-shrink-0 border-b px-4 py-3 lg:px-6" style={{ borderColor: 'var(--line)', background: 'var(--header-bg)' }}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg border lg:hidden" style={{ borderColor: 'var(--line)', background: 'var(--soft-bg)', color: 'var(--green)' }}>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg border lg:hidden" style={{ borderColor: 'var(--line)', background: 'var(--panel-strong)', color: 'var(--green)' }}>
                 <BrandIcon className="h-3.5 w-3.5" />
               </span>
-              <p className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>Constitution of Kenya, 2010</p>
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-medium" style={{ color: 'var(--text)' }}>General / Constitution of Kenya, 2010</p>
+                {pendingCount > 0 && (
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[10px]" style={{ color: 'var(--dim)' }} aria-live="polite">
+                    <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--green)' }} />
+                    Thinking
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
               {messages.length > 0 && (
-                <button onClick={clearSession} className="text-[11px]" style={{ color: 'var(--dim)' }}>
+                <button onClick={clearSession} className="rounded-md px-2 py-1 text-[11px] transition-colors hover:bg-[var(--soft-bg-hover)]" style={{ color: 'var(--dim)' }}>
                   Clear
                 </button>
               )}
@@ -194,26 +190,26 @@ export default function ChatInterface() {
           </div>
         </header>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-2xl px-4 py-6 space-y-8">
-
-            {/* Empty state */}
+          <div className="mx-auto max-w-3xl space-y-7 px-4 py-6 sm:px-6 lg:py-8">
             {messages.length === 0 && (
-              <div className="pt-4">
-                <h1 className="text-[22px] font-semibold mb-1" style={{ fontFamily: 'var(--font-lora), Georgia, serif', color: 'var(--text)' }}>
-                  Ask the Constitution
+              <div className="mx-auto max-w-2xl pt-8 sm:pt-14">
+                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--panel-strong)', color: 'var(--green)', boxShadow: 'var(--shadow-soft)' }}>
+                  <BrandIcon className="h-4 w-4" />
+                </div>
+                <h1 className="mb-1 text-[20px] font-semibold tracking-[-0.01em]" style={{ fontFamily: 'var(--font-lora), Georgia, serif', color: 'var(--text)' }}>
+                  Ask Katiba
                 </h1>
-                <p className="text-[13px] mb-7" style={{ color: 'var(--muted)' }}>
-                  Ask about constitutional rights, public offices, elections, devolution, and the Constitution of Kenya.
+                <p className="mb-6 max-w-lg text-[13px] leading-6" style={{ color: 'var(--muted)' }}>
+                  Rights, public offices, elections, devolution, amendments, and implementation laws.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {COMMON_QUESTIONS.map(q => (
                     <button
                       key={q}
                       onClick={() => search(q)}
-                      className="text-left text-[13px] px-4 py-3 rounded-xl border transition-colors hover:border-[var(--green)] hover:bg-[var(--soft-bg)]"
-                      style={{ border: '1px solid var(--line)', color: 'var(--muted)', background: 'var(--card)' }}
+                      className="rounded-lg border px-3.5 py-2.5 text-left text-[12px] leading-5 transition-colors hover:border-[var(--green)] hover:bg-[var(--soft-bg)]"
+                      style={{ borderColor: 'var(--line)', color: 'var(--muted)', background: 'var(--panel-strong)' }}
                     >
                       {q}
                     </button>
@@ -222,48 +218,44 @@ export default function ChatInterface() {
               </div>
             )}
 
-            {/* Message thread */}
             {messages.map(msg => (
-              <div key={msg.id} className="space-y-3">
-
-                {/* User bubble */}
+              <div key={msg.id} className="space-y-2.5">
                 <div className="flex justify-end">
                   <div
-                    className="max-w-sm rounded-2xl rounded-tr-sm px-4 py-2.5 text-[13px] leading-6"
+                    className="max-w-[82%] rounded-lg px-3.5 py-2.5 text-[13px] leading-6 sm:max-w-md"
                     style={{ background: 'var(--user-bg)', color: 'var(--text)' }}
                   >
                     {msg.question}
                   </div>
                 </div>
 
-                {/* Error */}
                 {msg.error && (
-                  <div className="rounded-2xl px-4 py-3 text-[13px]" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
+                  <div className="rounded-lg px-3.5 py-3 text-[13px]" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
                     {msg.error}
                   </div>
                 )}
 
-                {/* AI answer */}
                 {msg.answer && (
-                  <div
-                    className="rounded-2xl px-4 py-3.5 text-[13px] leading-7"
-                    style={{ background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--text)' }}
-                  >
-                    {msg.answer}
+                  <div className="flex justify-start">
+                    <div
+                      className="max-w-[92%] rounded-lg px-4 py-3.5 text-[13px] leading-7"
+                      style={{ background: 'var(--answer-bg)', border: '1px solid var(--line)', color: 'var(--text)', boxShadow: 'var(--shadow-soft)' }}
+                    >
+                      {msg.answer}
+                    </div>
                   </div>
                 )}
 
-                {/* Assistant thinking */}
                 {msg.status === 'pending' && (
                   <div className="flex justify-start">
                     <div
-                      className="rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5"
-                      style={{ background: 'var(--card)', border: '1px solid var(--line)' }}
+                      className="flex items-center gap-1.5 rounded-lg px-3.5 py-3"
+                      style={{ background: 'var(--answer-bg)', border: '1px solid var(--line)' }}
                     >
                       {[0, 1, 2].map(i => (
                         <span
                           key={i}
-                          className="w-1.5 h-1.5 rounded-full animate-bounce"
+                          className="h-1.5 w-1.5 animate-bounce rounded-full"
                           style={{ background: 'var(--green)', animationDelay: `${i * 150}ms` }}
                         />
                       ))}
@@ -271,18 +263,17 @@ export default function ChatInterface() {
                   </div>
                 )}
 
-                {/* Reference articles */}
                 {msg.articles.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] px-1" style={{ color: 'var(--dim)' }}>
-                      Sources
-                    </p>
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between px-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: 'var(--dim)' }}>Sources</p>
+                      <p className="text-[10px]" style={{ color: 'var(--dim)' }}>{Math.min(msg.articles.length, 6)} shown</p>
+                    </div>
                     {msg.articles.slice(0, 6).map((art, i) => (
-                      <ArticleCard key={`${art.source_type ?? 'constitution'}-${art.article ?? art.source_title}-${i}`} article={art} rank={i} />
+                      <ArticleCard key={`${art.source_type ?? 'constitution'}-${art.article ?? art.source_title}-${i}`} article={art} />
                     ))}
                   </div>
                 )}
-
               </div>
             ))}
 
@@ -290,33 +281,35 @@ export default function ChatInterface() {
           </div>
         </div>
 
-        {/* Input */}
         <div className="flex-shrink-0 border-t px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--footer-bg)' }}>
-          <form onSubmit={submit} className="mx-auto max-w-2xl flex items-end gap-2">
+          <form
+            onSubmit={submit}
+            className="mx-auto flex max-w-3xl items-end gap-2 rounded-lg border p-1.5"
+            style={{ borderColor: 'var(--line)', background: 'var(--input-bg)', boxShadow: 'var(--shadow-soft)' }}
+          >
             <textarea
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); search(input) } }}
-              placeholder="Ask about rights, offices, elections, or the Constitution…"
+              placeholder="Ask about rights, offices, elections, or the Constitution..."
               rows={1}
-              className="flex-1 resize-none rounded-xl px-4 py-2.5 text-[13px] outline-none transition-colors"
-              style={{ background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--text)', maxHeight: '140px' }}
+              className="min-h-9 flex-1 resize-none bg-transparent px-3 py-2 text-[13px] leading-6 outline-none"
+              style={{ color: 'var(--text)', maxHeight: '140px' }}
             />
             <button
               type="submit"
               disabled={!input.trim()}
-              className="flex-shrink-0 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-opacity disabled:opacity-30"
+              className="min-h-9 flex-shrink-0 rounded-md px-3.5 py-2 text-[12px] font-semibold transition-opacity disabled:opacity-30"
               style={{ background: 'var(--green)', color: 'var(--button-text)' }}
             >
               Send
             </button>
           </form>
-          <p className="mt-2 text-center text-[11px]" style={{ color: 'var(--dim)' }}>
+          <p className="mt-2 text-center text-[10px]" style={{ color: 'var(--dim)' }}>
             Answers cite exact articles and related implementation laws
           </p>
         </div>
-
       </div>
     </div>
   )
